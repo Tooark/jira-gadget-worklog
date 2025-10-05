@@ -1,0 +1,40 @@
+{
+  "name": "jira-worklog-gadget",
+  "version": "3.27.0",
+  "description": "Worklog Gadget",
+  "scripts": {
+    "build": "npm run build --workspace=frontend",
+    "clean": "npm run clean --workspace=frontend",
+    "deploy": "npm run build && forge deploy && forge install --upgrade",
+    "deploy-hml": "npm run build && forge deploy -e staging && forge install -e staging --upgrade",
+    "deploy-prd": "npm run build && forge deploy -e production && forge install -e production --upgrade",
+    "deploy-test": "npm run build && npm test && forge deploy && forge install --upgrade",
+    "lint": "eslint . && npm run build && npm run lint:forge",
+    "lint:fix": "eslint . --fix",
+    "lint:forge": "forge lint",
+    "lint:tsc": "npm run lint:tsc --workspace=frontend",
+    "login": "forge login",
+    "prepare": "husky",
+    "storybook": "npm run storybook --prefix=src/storybook",
+    "test": "npm run test:ci --workspace=frontend"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "20.1.0",
+    "@commitlint/config-conventional": "20.0.0",
+    "@eslint/compat": "1.4.0",
+    "@forge/cli": "12.6.1",
+    "eslint": "9.36.0",
+    "eslint-plugin-prettier": "5.5.4",
+    "eslint-plugin-simple-import-sort": "12.1.1",
+    "globals": "16.4.0",
+    "husky": "9.1.7",
+    "lint-staged": "16.2.3",
+    "prettier": "3.6.2"
+  },
+  "workspaces": [
+    "src/backend",
+    "src/frontend"
+  ],
+  "private": true,
+  "license": "MIT"
+}
