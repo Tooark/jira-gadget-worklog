@@ -1,0 +1,373 @@
+import Resolver from '@forge/resolver';
+import api, { route } from '@forge/api';
+
+const resolver = new Resolver();
+
+/**
+ * @param {string} jql
+ * @param {string} nextPageToken
+ * @param {number} maxResults
+ * @param {Array<{id:string, fields:{worklog:{maxResults:number, total:number, worklogs:Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>}}}>} accumulatedIssues
+ */
+const getDataIssues = async (jql = '', nextPageToken = '', maxResults = 100, accumulatedIssues = []) => {
+  // Monta o corpo da requisição
+  /** @type {{jql:string, nextPageToken:string, maxResults:number, expand:string, fields:string[]}} */
+  const body = {
+    jql,
+    nextPageToken,
+    maxResults,
+    expand: 'names',
+    fields: ['worklog']
+    // fields: ['summary', 'worklog', 'customfield_10001', 'project', 'assignee', 'issuetype', 'status', 'priority', 'timetracking']
+  };
+
+  try {
+    // Realiza a requisição para a API de busca do Jira
+    const url = route`/rest/api/3/search/jql`;
+    const response = await api
+      .asApp()
+      .requestJira(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+    // Converte a resposta para JSON
+    /** @type {{issues:Array<{id:string, fields:{worklog:{maxResults:number, total:number, worklogs:Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>}}}>, isLast:boolean, nextPageToken:string}} */
+    const json = await response.json();
+
+    // Acumula as issues retornadas
+    /** @type {Array<{id:string, fields:{worklog:{maxResults:number, total:number, worklogs:Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>}}}>} */
+    const issues = json.issues || [];
+    accumulatedIssues.push(...issues);
+
+    // Verifica se há mais páginas para buscar
+    if (json.isLast === false && json.nextPageToken) {
+      // Recursivamente busca as próximas páginas
+      return await getDataIssues(jql, json.nextPageToken, maxResults, accumulatedIssues);
+    }
+
+    // Retorna todas as issues acumuladas
+    return accumulatedIssues;
+  } catch (error) {
+    console.error("getDataIssues error: ", error);
+    throw error;
+  }
+};
+
+/**
+ * @param {string} issueId
+ * @param {number} startAt
+ * @param {number} maxResults
+ * @param {Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>} accumulatedWorklogs
+ */
+const getDataWorklogs = async (issueId, startAt = 0, maxResults = 100, accumulatedWorklogs = []) => {
+  try {
+    // Realiza a requisição para a API de busca do Jira
+    const url = route`/rest/api/3/issue/${issueId}/worklog?startAt=${startAt}&maxResults=${maxResults}`;
+    const response = await api
+      .asApp()
+      .requestJira(url, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+    // Converte a resposta para JSON
+    /** @type {{startAt:number, maxResults:number, total:number, worklogs:Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>}} */
+    const json = await response.json();
+
+    // Acumula as issues retornadas
+    const startAtResp = json.startAt || 0;
+    const maxResultsResp = json.maxResults || 0;
+    const totalResp = json.total || 0;
+    const worklogs = json.worklogs || [];
+    accumulatedWorklogs = [...accumulatedWorklogs, ...worklogs];
+
+    // Verifica se há mais páginas para buscar
+    if (totalResp > startAtResp + maxResultsResp) {
+      // Recursivamente busca as próximas páginas
+      return await getDataWorklogs(issueId, startAtResp + maxResultsResp, maxResultsResp, accumulatedWorklogs);
+    }
+
+    // Retorna todas as issues acumuladas
+    return accumulatedWorklogs;
+  } catch (error) {
+    console.error("getDataIssues error: ", error);
+    throw error;
+  }
+};
+
+/**
+ * @param {number} startAt
+ * @param {number} maxResults
+ * @param {Array<{
+ *   accountId: string,
+ *   accountType: string,
+ *   active: boolean,
+ *   displayName: string
+ * }>} accumulatedUsers
+ */
+const getDataUsers = async (startAt = 0, maxResults = 1000, accumulatedUsers = []) => {
+  try {
+    // Realiza a requisição para a API de busca de usuários do Jira
+    const url = route`/rest/api/3/users/search?startAt=${startAt}&maxResults=${maxResults}`;
+    const response = await api
+      .asApp()
+      .requestJira(url, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+    // Converte a resposta para JSON e trata diferentes formatos
+    const json = await response.json();
+    let users = [];
+
+    // Se a API retornar um objeto com { values: [...] } (algumas endpoints), normalize
+    const iterable = Array.isArray(json) ? json : (json && Array.isArray(json.values) ? json.values : null);
+
+    // Retorna o acumulado atual para evitar lançar erro na UI
+    if (!iterable) {
+      return accumulatedUsers;
+    }
+
+    for (const element of iterable) {
+      if (element && element.accountType === 'atlassian' && element.active === true) {
+        const user = {
+          accountId: element.accountId,
+          accountType: element.accountType,
+          active: element.active,
+          displayName: element.displayName
+        };
+        users.push(user);
+      }
+    }
+
+    // users = users.filter((/** @type {{accountId:string, accountType:string, active:boolean, displayName:string}} */ user) =>
+    //   user.accountType === 'atlassian' && user.active === true
+    // );
+    accumulatedUsers.push(...users);
+
+    // Verifica se há mais usuários para buscar
+    if (json.length === 1000) {
+      return await getDataUsers(startAt + maxResults, maxResults, accumulatedUsers);
+    }
+
+    return accumulatedUsers;
+  } catch (error) {
+    console.error("getDataUsers error: ", error);
+    throw error;
+  }
+};
+
+/**
+ * Obtém os registros de trabalho (worklogs) de um determinado período
+ */
+resolver.define('getWorklog', async ({ payload }) => {
+  /** @type {{days:number, color:string, query:string, users:Array<string>|null}} */
+  const payloadAny = payload ?? { days: 7, color: 'color', query: '', users: [] };
+
+  // Valida e ajusta os parâmetros
+  /** @type {number} */
+  const days = payloadAny.days < 1 ? 7 : payloadAny.days;
+  /** @type {Array<string>|null} */
+  const users = payloadAny.users && payloadAny.users.length > 0 ? payloadAny.users : [];
+  /** @type {string} */
+  const jql = payloadAny.query;
+
+  // Monta o JQL para buscar as issues com worklogs no período especificado
+  /** @type {string} */
+  let searchJql = '';
+  searchJql += `worklogDate >= startOfDay("-${days}d")`;
+  searchJql += users.length > 0 ? ` AND worklogAuthor in (${users.join(',')})` : '';
+  searchJql += jql ? ` AND ${jql}` : '';
+
+  // Retorno da lista de issues
+  /** @type {Array<{id:string, fields:{worklog:{maxResults:number, total:number, worklogs:Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>}}}>} */
+  const result = await getDataIssues(searchJql);
+
+  // Agrupa e soma o tempo por autor
+  /** @type {Record<string, number>} */
+  const authorTimes = {};
+
+  // Verifica se há issues retornadas
+  if (result.length > 0) {
+    for (const /** @type {{id:string, fields:{worklog:{maxResults:number, total:number, worklogs:Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>}}}} */ issue of result) {
+      const issueId = issue.id;
+      if (!issueId) continue;
+
+      const totalWorklogs = issue.fields?.worklog?.total || 0;
+      if (totalWorklogs === 0) continue;
+
+      /** @type {Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>} */
+      let worklogs = [];
+
+      if (totalWorklogs > 20) {
+        worklogs = await getDataWorklogs(issueId);
+      } else {
+        worklogs = issue.fields?.worklog?.worklogs || [];
+      }
+
+      for (const wl of worklogs) {
+        let author = wl.author;
+        let display_name = author?.displayName || 'Desconhecido';
+        let account_id = author?.accountId || 'unknown';
+
+        if (display_name && (users.length === 0 || users.includes(account_id))) {
+          if (!(display_name in authorTimes)) {
+            authorTimes[display_name] = 0;
+          }
+
+          let started = wl.started ? new Date(wl.started) : null;
+          let analyzeStart = new Date(new Date().getTime() - days * 24 * 60 * 60 * 1000);
+
+          if (started && started >= analyzeStart) {
+            let hours = wl.timeSpentSeconds ? wl.timeSpentSeconds / 3600 : 0;
+            authorTimes[display_name] += hours;
+          }
+        }
+      }
+    }
+
+    // Ordena authorTimes por nome (label) em ordem alfabética
+    const sortedEntries = Object
+      .entries(authorTimes)
+      .sort((a, b) => a[0].localeCompare(b[0]));
+    // Atualiza authorTimes com a ordem correta
+    Object
+      .keys(authorTimes)
+      .forEach(key => delete authorTimes[key]);
+    sortedEntries
+      .forEach(([name, value]) => { authorTimes[name] = value; });
+  }
+
+  // Mapa de cores
+  /** @type {Record<string, string[]>} */
+  const colorMap = {
+    "color": [
+      '#fb2c36', // red
+      '#ff6900', // orange
+      '#fd9a00', // amber
+      '#efb100', // yellow
+      '#7ccf00', // lime
+      '#00c951', // green
+      '#00bc7d', // emerald
+      '#00bba7', // teal
+      '#00b8db', // cyan
+      '#0084d1', // sky
+      '#155dfc', // blue
+      '#615fff', // indigo
+      '#7f22fe', // violet
+      '#ad46ff', // purple
+      '#e12afb', // fuchsia
+      '#f6339a', // pink
+      '#ff2056', // rose
+      '#4a5565', // gray
+      '#525252', // neutral
+    ],
+    "gray": [
+      '#030712', // 950
+      '#111827', // 900
+      '#1f2937', // 800
+      '#374151', // 700
+      '#4b5563', // 600
+      '#6b7280', // 500
+      '#9ca3af', // 400
+      '#d1d5db', // 300
+      '#e5e7eb', // 200
+      '#f3f4f6', // 100
+    ],
+    "red": [
+      '#450a0a', // 950
+      '#7f1d1d', // 900
+      '#991b1b', // 800
+      '#b91c1c', // 700
+      '#dc2626', // 600
+      '#ef4444', // 500
+      '#f87171', // 400
+      '#fca5a5', // 300
+      '#fecaca', // 200
+      '#fee2e2', // 100
+    ],
+    "blue": [
+      '#172554', // 950
+      '#1e3a8a', // 900
+      '#1e40af', // 800
+      '#1d4ed8', // 700
+      '#2563eb', // 600
+      '#3b82f6', // 500
+      '#60a5fa', // 400
+      '#93c5fd', // 300
+      '#bfdbfe', // 200
+      '#dbeafe', // 100
+    ],
+    "green": [
+      '#052e16', // 950
+      '#14532d', // 900
+      '#166534', // 800
+      '#15803d', // 700
+      '#16a34a', // 600
+      '#22c55e', // 500
+      '#4ade80', // 400
+      '#86efac', // 300
+      '#bbf7d0', // 200
+      '#dcfce7', // 100
+    ],
+    "orange": [
+      '#431407', // 950
+      '#7c2d12', // 900
+      '#9a3412', // 800
+      '#c2410c', // 700
+      '#ea580c', // 600
+      '#f97316', // 500
+      '#fb923c', // 400
+      '#fdba74', // 300
+      '#fed7aa', // 200
+      '#ffedd5', // 100
+    ],
+  };
+
+  // Seleciona o conjunto de cores baseado na chave fornecida (padrão 'color')
+  /** @type {string} */
+  const colorKey = payloadAny.color in colorMap ? payloadAny.color : 'color';
+
+  // Seleciona o array de cores
+  /** @type {string[]} */
+  const colorGraph = colorMap[colorKey];
+
+  // Converte authorTimes para o formato esperado pelo gráfico: [color, label, value]
+  /** @type {Array<[string, string, number]>} */
+  const arrayData = Object
+    .entries(authorTimes)
+    .map(([name, value], idx) => [
+      colorGraph[idx % colorGraph.length],// cor
+      name,                               // label
+      value                               // valor
+    ]);
+
+  return arrayData;
+});
+
+/**
+ * Retorna a lista de usuários ativos do Jira (accountType='atlassian' e active=true)
+ * no formato { label: displayName, value: accountId }
+ */
+resolver.define('getUsers', async () => {
+  try {
+    // Busca todos os usuários ativos
+    /** @type {Array<{accountId:string, accountType:string, active:boolean, displayName:string }>} */
+    const users = await getDataUsers();
+
+    return users
+      .filter((/** @type {{accountId:string, accountType:string, active:boolean, displayName:string}} */ user) =>
+        user.accountType === 'atlassian' && user.active === true)
+      .map((/** @type {{ displayName:string; accountId:string; }} */ user) => ({
+        label: user.displayName,
+        value: user.accountId
+      }));
+  } catch (error) {
+    console.error("getUsers error:", error);
+    throw error;
+  }
+});
+
+export const handler = resolver.getDefinitions();
