@@ -18,7 +18,6 @@ const getDataIssues = async (jql = '', nextPageToken = '', maxResults = 100, acc
     maxResults,
     expand: 'names',
     fields: ['worklog']
-    // fields: ['summary', 'worklog', 'customfield_10001', 'project', 'assignee', 'issuetype', 'status', 'priority', 'timetracking']
   };
 
   try {
@@ -39,6 +38,7 @@ const getDataIssues = async (jql = '', nextPageToken = '', maxResults = 100, acc
     // Acumula as issues retornadas
     /** @type {Array<{id:string, fields:{worklog:{maxResults:number, total:number, worklogs:Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>}}}>} */
     const issues = json.issues || [];
+
     accumulatedIssues.push(...issues);
 
     // Verifica se há mais páginas para buscar
@@ -77,11 +77,16 @@ const getDataWorklogs = async (issueId, startAt = 0, maxResults = 100, accumulat
     const json = await response.json();
 
     // Acumula as issues retornadas
+    /** @type {number} */
     const startAtResp = json.startAt || 0;
+    /** @type {number} */
     const maxResultsResp = json.maxResults || 0;
+    /** @type {number} */
     const totalResp = json.total || 0;
+    /** @type {Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>} */
     const worklogs = json.worklogs || [];
-    accumulatedWorklogs = [...accumulatedWorklogs, ...worklogs];
+
+    accumulatedWorklogs.push(...worklogs);
 
     // Verifica se há mais páginas para buscar
     if (totalResp > startAtResp + maxResultsResp) {
@@ -120,9 +125,11 @@ const getDataUsers = async (startAt = 0, maxResults = 1000, accumulatedUsers = [
 
     // Converte a resposta para JSON e trata diferentes formatos
     const json = await response.json();
+    /** @type {Array<{accountId:string, accountType:string, active:boolean, displayName:string}>} */
     let users = [];
 
     // Se a API retornar um objeto com { values: [...] } (algumas endpoints), normalize
+    /** @type {Array<{accountId:string, accountType:string, active:boolean, displayName:string}>} */
     const iterable = Array.isArray(json) ? json : (json && Array.isArray(json.values) ? json.values : null);
 
     // Retorna o acumulado atual para evitar lançar erro na UI
@@ -130,21 +137,23 @@ const getDataUsers = async (startAt = 0, maxResults = 1000, accumulatedUsers = [
       return accumulatedUsers;
     }
 
-    for (const element of iterable) {
+    // Filtra apenas usuários ativos com accountType 'atlassian'
+    for (const /** @type {{accountId:string, accountType:string, active:boolean, displayName:string}} */ element of iterable) {
+      // Se o elemento não for válido, pula para o próximo
       if (element && element.accountType === 'atlassian' && element.active === true) {
+        // Cria o objeto do usuário
+        /** @type {{accountId:string, accountType:string, active:boolean, displayName:string}} */
         const user = {
           accountId: element.accountId,
           accountType: element.accountType,
           active: element.active,
           displayName: element.displayName
         };
+
         users.push(user);
       }
     }
 
-    // users = users.filter((/** @type {{accountId:string, accountType:string, active:boolean, displayName:string}} */ user) =>
-    //   user.accountType === 'atlassian' && user.active === true
-    // );
     accumulatedUsers.push(...users);
 
     // Verifica se há mais usuários para buscar
@@ -191,37 +200,64 @@ resolver.define('getWorklog', async ({ payload }) => {
 
   // Verifica se há issues retornadas
   if (result.length > 0) {
+    // Percorre as issues retornadas
     for (const /** @type {{id:string, fields:{worklog:{maxResults:number, total:number, worklogs:Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>}}}} */ issue of result) {
+      // Obtém o ID da issue
+      /** @type {string} */
       const issueId = issue.id;
-      if (!issueId) continue;
 
+      // Se a issue não tiver ID, pula para a próxima
+      if (!issueId) {
+        continue;
+      }
+
+      // Obtém o total de worklogs da issue
+      /** @type {number} */
       const totalWorklogs = issue.fields?.worklog?.total || 0;
-      if (totalWorklogs === 0) continue;
+
+      // Se não houver worklogs, pula para a próxima issue
+      if (totalWorklogs === 0) {
+        continue;
+      }
 
       /** @type {Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>} */
       let worklogs = [];
 
+      // Se houver mais de 20 worklogs, buscar todos via paginação
       if (totalWorklogs > 20) {
         worklogs = await getDataWorklogs(issueId);
       } else {
         worklogs = issue.fields?.worklog?.worklogs || [];
       }
 
-      for (const wl of worklogs) {
+      // Percorre os worklogs da issue
+      for (const /** @type {{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}} */ wl of worklogs) {
+        /** @type {{accountId:string, displayName:string}} */
         let author = wl.author;
+        /** @type {string} */
         let display_name = author?.displayName || 'Desconhecido';
+        /** @type {string} */
         let account_id = author?.accountId || 'unknown';
 
+        // Considera apenas worklogs com autor válido e, se fornecido, dentro da lista de usuários
         if (display_name && (users.length === 0 || users.includes(account_id))) {
+          // Inicializa o autor no objeto se ainda não existir
           if (!(display_name in authorTimes)) {
             authorTimes[display_name] = 0;
           }
 
+          // Verifica a data do worklog
+          /** @type {Date|null} */
           let started = wl.started ? new Date(wl.started) : null;
+          /** @type {Date} */
           let analyzeStart = new Date(new Date().getTime() - days * 24 * 60 * 60 * 1000);
 
+          // Considera apenas worklogs dentro do período especificado
           if (started && started >= analyzeStart) {
+            // Converte o tempo gasto para horas e acumula
+            /** @type {number} */
             let hours = wl.timeSpentSeconds ? wl.timeSpentSeconds / 3600 : 0;
+
             authorTimes[display_name] += hours;
           }
         }
@@ -229,6 +265,7 @@ resolver.define('getWorklog', async ({ payload }) => {
     }
 
     // Ordena authorTimes por nome (label) em ordem alfabética
+    /** @type {Array<[string, number]>} */
     const sortedEntries = Object
       .entries(authorTimes)
       .sort((a, b) => a[0].localeCompare(b[0]));
@@ -359,15 +396,18 @@ resolver.define('getUsers', async () => {
 
     return users
       .filter((/** @type {{accountId:string, accountType:string, active:boolean, displayName:string}} */ user) =>
-        user.accountType === 'atlassian' && user.active === true)
+      user.accountType === 'atlassian' && user.active === true)
       .map((/** @type {{ displayName:string; accountId:string; }} */ user) => ({
-        label: user.displayName,
-        value: user.accountId
-      }));
+      label: user.displayName,
+      value: user.accountId
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   } catch (error) {
     console.error("getUsers error:", error);
     throw error;
   }
 });
+
+
 
 export const handler = resolver.getDefinitions();
