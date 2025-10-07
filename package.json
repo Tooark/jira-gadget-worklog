@@ -1,6 +1,6 @@
 {
   "name": "jira-worklog-gadget",
-  "version": "3.27.0",
+  "version": "4.32.0",
   "description": "Worklog Gadget",
   "scripts": {
     "build": "npm run build --workspace=frontend",
