@@ -5,10 +5,16 @@ import { useForgeInvoke } from '../hooks';
 interface Props {
   formValues: FormValues;
 }
+interface TreeNode {
+  color: string;
+  name: string;
+  value: number;
+  children?: Array<TreeNode>;
+}
 
 export default function View(props: Props) {
   // Chama o backend getWorklog para os últimos 7 dias (padrão)
-  const data = useForgeInvoke<any[]>('getWorklog', {
+  const data = useForgeInvoke<TreeNode[]>('getWorklog', {
     days: props.formValues?.days || 7,
     color: props.formValues?.color || 'color',
     query: props.formValues?.jql || '',
@@ -17,7 +23,7 @@ export default function View(props: Props) {
 
   // data expected: array of [color, name, value]
   const names = (data || []).map((d) => {
-    const parts = d[1].split(' ');
+    const parts = d.name.split(' ');
 
     if (parts.length === 1) {
       return parts[0];
@@ -25,8 +31,8 @@ export default function View(props: Props) {
 
     return `${parts[0]} ${parts[parts.length - 1]}`;
   });
-  const values = (data || []).map((d) => Math.round(d[2] * 10) / 10);
-  const colors = (data || []).map((d) => d[0]);
+  const values = (data || []).map((d) => Math.round(d.value * 10) / 10);
+  const colors = (data || []).map((d) => d.color);
 
   // Preenche os campos days e jql a partir da API, se disponíveis
   const displayDays = props.formValues?.days || 7;
