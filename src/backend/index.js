@@ -1,5 +1,6 @@
 import Resolver from '@forge/resolver';
 import api, { route } from '@forge/api';
+import { Children } from 'react';
 
 const resolver = new Resolver();
 
@@ -195,8 +196,8 @@ resolver.define('getWorklog', async ({ payload }) => {
   const result = await getDataIssues(searchJql);
 
   // Agrupa e soma o tempo por autor
-  /** @type {Record<string, number>} */
-  const authorTimes = {};
+  /** @type {Record<string, {value:number, days:{[key:string]:{value:number}}}>} */
+  let authorTimes = {};
 
   // Verifica se há issues retornadas
   if (result.length > 0) {
@@ -238,12 +239,14 @@ resolver.define('getWorklog', async ({ payload }) => {
         let display_name = author?.displayName || 'Desconhecido';
         /** @type {string} */
         let account_id = author?.accountId || 'unknown';
+        /** @type {string} */
+        let dayKey = wl.started ? wl.started.split('T')[0] : 'unknown';
 
         // Considera apenas worklogs com autor válido e, se fornecido, dentro da lista de usuários
         if (display_name && (users.length === 0 || users.includes(account_id))) {
           // Inicializa o autor no objeto se ainda não existir
           if (!(display_name in authorTimes)) {
-            authorTimes[display_name] = 0;
+            authorTimes[display_name] = { value: 0, days: {} };
           }
 
           // Verifica a data do worklog
@@ -254,18 +257,24 @@ resolver.define('getWorklog', async ({ payload }) => {
 
           // Considera apenas worklogs dentro do período especificado
           if (started && started >= analyzeStart) {
+            // Garante que a chave do dia exista antes de acumular horas
+            if (!(dayKey in authorTimes[display_name].days)) {
+              authorTimes[display_name].days[dayKey] = { value: 0 };
+            }
+
             // Converte o tempo gasto para horas e acumula
             /** @type {number} */
             let hours = wl.timeSpentSeconds ? wl.timeSpentSeconds / 3600 : 0;
 
-            authorTimes[display_name] += hours;
+            authorTimes[display_name].value += hours;
+            authorTimes[display_name].days[dayKey].value += hours;
           }
         }
       }
     }
 
     // Ordena authorTimes por nome (label) em ordem alfabética
-    /** @type {Array<[string, number]>} */
+    /** @type {Array<[string, {value:number, days:{[key:string]:{value:number}}}]>} */
     const sortedEntries = Object
       .entries(authorTimes)
       .sort((a, b) => a[0].localeCompare(b[0]));
@@ -275,6 +284,8 @@ resolver.define('getWorklog', async ({ payload }) => {
       .forEach(key => delete authorTimes[key]);
     sortedEntries
       .forEach(([name, value]) => { authorTimes[name] = value; });
+
+    authorTimes = Object.fromEntries(sortedEntries);
   }
 
   // Mapa de cores
@@ -371,18 +382,74 @@ resolver.define('getWorklog', async ({ payload }) => {
   /** @type {string[]} */
   const colorGraph = colorMap[colorKey];
 
-  // Converte authorTimes para o formato esperado pelo gráfico: [color, label, value]
-  /** @type {Array<[string, string, number]>} */
-  const arrayData = Object
-    .entries(authorTimes)
-    .map(([name, value], idx) => [
-      colorGraph[idx % colorGraph.length],// cor
-      name,                               // label
-      value                               // valor
-    ]);
+  // // Converte authorTimes para o formato esperado pelo gráfico: [color, label, value, group]
+  // /** @type {Array<{color:string, name:string, value:number, group:string}>} */
+  // const arrayData = Object
+  //   .entries(authorTimes)
+  //   .map(([name, value], idx) => {
+  //     return {
+  //       color: colorGraph[idx % colorGraph.length],// cor
+  //       name: name,                               // label
+  //       value: value,                              // valor
+  //     };
+  //   });
+  const arrayData = createData(authorTimes, colorGraph);
 
   return arrayData;
 });
+
+/**
+ * Nó de entrada (recursivo)
+ * @typedef {{ value: number; days?: Record<string, TreeNode> }} TreeNode
+ */
+/**
+ * Nó de saída (recursivo)
+ * @typedef {{ color: string; name: string; value: number; children: OutputNode[] }} OutputNode
+ */
+
+/** 
+ * @param {Record<string, TreeNode>} data
+ * @param {string[]} color
+ * @returns {OutputNode[]}
+ * */
+const createData = (data, color) => {
+  /** @type {OutputNode[]} */
+  const result = [];
+
+  for (const key in data) {
+    if (!Object.hasOwn(data, key)) continue;
+
+    /** @type {TreeNode} */
+    const element = data[key];
+
+    /** @type {OutputNode} */
+    const node = {
+      // Usa o índice atual para começar da primeira cor
+      color: color[result.length % color.length],
+      name: key,
+      value: element.value,
+      children: /** @type {OutputNode[]} */([]) // evita never[]
+    };
+
+    if (element.days) {
+      // Ordena as chaves de 'days' e recria um objeto com a mesma estrutura
+      const sortedKeys = Object.keys(element.days).sort((a, b) => a.localeCompare(b));
+
+      /** @type {{ [k: string]: TreeNode }} */
+      const days = {};
+      for (const k of sortedKeys) {
+        days[k] = element.days[k];
+      }
+
+      node.children.push(...createData(days, color));
+    }
+
+    result.push(node);
+  }
+
+  return result;
+};
+
 
 /**
  * Retorna a lista de usuários ativos do Jira (accountType='atlassian' e active=true)
@@ -396,10 +463,10 @@ resolver.define('getUsers', async () => {
 
     return users
       .filter((/** @type {{accountId:string, accountType:string, active:boolean, displayName:string}} */ user) =>
-      user.accountType === 'atlassian' && user.active === true)
+        user.accountType === 'atlassian' && user.active === true)
       .map((/** @type {{ displayName:string; accountId:string; }} */ user) => ({
-      label: user.displayName,
-      value: user.accountId
+        label: user.displayName,
+        value: user.accountId
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
   } catch (error) {
@@ -407,7 +474,6 @@ resolver.define('getUsers', async () => {
     throw error;
   }
 });
-
 
 
 export const handler = resolver.getDefinitions();

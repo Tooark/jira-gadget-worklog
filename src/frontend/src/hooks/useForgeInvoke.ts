@@ -9,25 +9,27 @@ export function useForgeInvoke<T>(
 ) {
   const [data, setData] = useState<T | undefined>();
 
-  // Serialize the payload so that object literals (which get recreated on
-  // every render) don't trigger the effect unnecessarily. We keep the
-  // serialized string in the dependencies instead of the raw object.
+  // Serialize o payload para que literais de objeto (que são recriados em
+  // cada renderização) não acionem o efeito desnecessariamente. Mantemos a
+  // string serializada nas dependências em vez do objeto bruto.
   const serializedPayload = invokePayload ? JSON.stringify(invokePayload) : undefined;
 
   useEffect(() => {
     let mounted = true;
 
-    // Avoid re-setting state if unmounted (safety for double mounts / StrictMode)
+    // Evita redefinir o estado se desmontado (segurança para montagens duplas / StrictMode)
     invoke<T>(functionKey, invokePayload)
       .then((res) => {
-        if (mounted) setData(res);
+        if (mounted) {
+          setData(res);
+        }
       })
       .catch(log.error);
 
     return () => {
       mounted = false;
     };
-    // Only re-run when the function key or the serialized payload changes.
+    // Somente executa novamente quando a tecla de função ou a carga serializada for alterada.
   }, [functionKey, serializedPayload]);
 
   return data;
