@@ -14,7 +14,7 @@
     "lint:forge": "forge lint",
     "lint:tsc": "npm run lint:tsc --workspace=frontend",
     "login": "forge login",
-    "prepare": "husky",
+    "prepare": "git config core.hooksPath .githooks",
     "storybook": "npm run storybook --prefix=src/storybook",
     "test": "npm run test:ci --workspace=frontend"
   },
@@ -27,7 +27,6 @@
     "eslint-plugin-prettier": "5.5.4",
     "eslint-plugin-simple-import-sort": "12.1.1",
     "globals": "16.4.0",
-    "husky": "9.1.7",
     "lint-staged": "16.2.3",
     "prettier": "3.6.2"
   },
