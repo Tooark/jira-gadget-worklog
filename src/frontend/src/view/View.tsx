@@ -18,7 +18,11 @@ export default function View(props: Props) {
   // data expected: array of [color, name, value]
   const names = (data || []).map((d) => {
     const parts = d[1].split(' ');
-    if (parts.length === 1) return parts[0];
+
+    if (parts.length === 1) {
+      return parts[0];
+    }
+
     return `${parts[0]} ${parts[parts.length - 1]}`;
   });
   const values = (data || []).map((d) => Math.round(d[2] * 10) / 10);

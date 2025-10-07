@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+
+# Fail fast on errors
+set -e
+
+# Run staged linters
+npx --yes lint-staged
+
+# TypeScript checks (delegated to workspace frontend)
+npm run lint:tsc
+
+# Run tests (frontend workspace in CI mode)
+npm test

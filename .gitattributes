@@ -1,0 +1,2 @@
+# Ensure shell hooks use LF to avoid CRLF issues on Windows
+.githooks/* text eol=lf
