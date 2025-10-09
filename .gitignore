@@ -50,3 +50,6 @@ Thumbs.db
 
 # Vim
 *.swp
+
+# VS Code
+.vscode/

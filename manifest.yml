@@ -1,7 +1,6 @@
-# https://developer.atlassian.com/platform/forge/manifest-reference/
 modules:
   jira:dashboardGadget:
-    - key: jira-dashboard-gadget
+    - key: tooark-gadget-worklog
       title: Worklog Gadget
       description: Worklog por usuário nos últimos N dias
       thumbnail: https://www.svgrepo.com/show/511175/timer.svg
