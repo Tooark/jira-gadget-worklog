@@ -1,7 +1,7 @@
 {
-  "name": "jira-worklog-gadget",
+  "name": "tooark-gadget-worklog",
   "version": "4.32.0",
-  "description": "Worklog Gadget",
+  "description": "Worklog por usuário nos últimos N dias",
   "scripts": {
     "build": "npm run build --workspace=frontend",
     "clean": "npm run clean --workspace=frontend",
