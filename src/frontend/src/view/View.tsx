@@ -6,20 +6,24 @@ import type { TreeNode, ViewProps } from '../types';
 
 // Componente de gráfico com drilldown múltiplo
 export default function View(props: ViewProps) {
+  // Dias para buscar (padrão 7)
+  const days = (props.formValues?.days || 7) < 0 ? 7 : props.formValues.days;
   // Chama o backend getWorklog para os últimos N dias (padrão 7)
   const rawData = useForgeInvoke<TreeNode[]>('getWorklog', {
-    days: props.formValues?.days || 7,
+    days,
     color: props.formValues?.color || 'color',
     query: props.formValues?.jql || '',
     users: props.formValues?.users || [],
   });
+
+  props.formValues.days = days;
 
   // Navegação: pilha de níveis selecionados para drilldown. Root = []
   const [path, setPath] = useState<TreeNode[]>([]);
 
   // Título base
   const title =
-    'Worklog dos últimos ' + (props.formValues?.days || 7) + ' dias';
+    'Worklog dos últimos ' + days + ' dias';
 
   // Função util para reduzir nomes (primeiro + último)
   const shortName = useCallback((full: string) => {

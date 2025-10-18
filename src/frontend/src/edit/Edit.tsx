@@ -26,6 +26,8 @@ export default function Edit(props: Props) {
     { label: 'Vermelho', value: 'red' },
   ];
 
+  props.formValues = { ...(props.formValues ?? {}), days: props.formValues?.days ?? 7 };
+
   return (
     <Form<FormValues> onSubmit={(event) => props.view.submit(event)}>
       {({ formProps, submitting }) => (
