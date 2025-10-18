@@ -171,6 +171,7 @@ const getDataUsers = async (startAt = 0, maxResults = 1000, accumulatedUsers = [
 
 /**
  * Obtém os registros de trabalho (worklogs) de um determinado período
+ * @param {{payload:{days:number, color:string, query:string, users:Array<string>|null}}} param0
  */
 resolver.define('getWorklog', async ({ payload }) => {
   /** @type {{days:number, color:string, query:string, users:Array<string>|null}} */
@@ -178,7 +179,7 @@ resolver.define('getWorklog', async ({ payload }) => {
 
   // Valida e ajusta os parâmetros
   /** @type {number} */
-  const days = payloadAny.days < 1 ? 7 : payloadAny.days;
+  const days = payloadAny.days < 0 ? 7 : payloadAny.days;
   /** @type {Array<string>|null} */
   const users = payloadAny.users && payloadAny.users.length > 0 ? payloadAny.users : [];
   /** @type {string} */
@@ -253,7 +254,10 @@ resolver.define('getWorklog', async ({ payload }) => {
           /** @type {Date|null} */
           let started = wl.started ? new Date(wl.started) : null;
           /** @type {Date} */
-          let analyzeStart = new Date(new Date().getTime() - days * 24 * 60 * 60 * 1000);
+          let now = new Date();
+          now.setHours(0, 0, 0, 0); // zera horas, minutos, segundos e ms
+          /** @type {Date} */
+          let analyzeStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
           // Considera apenas worklogs dentro do período especificado
           if (started && started >= analyzeStart) {
