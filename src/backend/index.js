@@ -1,14 +1,141 @@
 import Resolver from '@forge/resolver';
 import api, { route } from '@forge/api';
-import { Children } from 'react';
 
 const resolver = new Resolver();
+
+/**
+ * @typedef {{
+ *   "16x16": string | null,
+ *   "24x24": string | null,
+ *   "32x32": string | null,
+ *   "48x48": string | null
+ * }} IconItem
+ */
+
+/**
+ * @typedef {{
+ *  accountId: string,
+ *  accountType: string,
+ *  displayName: string,
+ *  timeZone: string,
+ *  avatarUrls: IconItem,
+ *  active: boolean
+ * }} UserItem
+ */
+
+/**
+ * @typedef {{
+ *  author: UserItem,
+ *  timeSpentSeconds: number,
+ *  started: string
+ * }} WorklogsItems
+ */
+
+/**
+ * @typedef {{
+ *  startAt: number,
+ *  maxResults: number,
+ *  total: number,
+ *  worklogs: Array<WorklogsItems>
+ * }} WorklogItem
+ */
+
+/**
+ * @typedef {{
+ *  worklog: WorklogItem
+ * }} FieldItem
+ */
+
+/**
+ * @typedef {{
+ *  id: string,
+ *  fields: FieldItem
+ * }} IssueItem
+ */
+
+/**
+ * @typedef {{
+ *  issues: Array<IssueItem>,
+ *  isLast: boolean,
+ *  nextPageToken: string
+ * }} IssueSearchResult
+ */
+
+/**
+ * Nó de entrada (recursivo)
+ * @typedef {{
+ *  value: number;
+ *  days?: Record<string, TreeNode>
+ * }} TreeNode
+ */
+
+/**
+ * Nó de saída (recursivo)
+ * @typedef {{
+ *  color: string;
+ *  name: string;
+ *  value: number;
+ *  children: OutputNode[]
+ * }} OutputNode
+ */
+
+/**
+ * @typedef {{
+ *  days: number,
+ *  color: string,
+ *  query: string,
+ *  users: Array<string> | null
+ * }} WorklogPayload
+ */
+
+/** 
+ * @param {Record<string, TreeNode>} data
+ * @param {string[]} color
+ * @returns {OutputNode[]}
+ * */
+const createData = (data, color) => {
+  /** @type {OutputNode[]} */
+  const result = [];
+
+  for (const key in data) {
+    if (!Object.hasOwn(data, key)) continue;
+
+    /** @type {TreeNode} */
+    const element = data[key];
+
+    /** @type {OutputNode} */
+    const node = {
+      // Usa o índice atual para começar da primeira cor
+      color: color[result.length % color.length],
+      name: key,
+      value: element.value,
+      children: /** @type {OutputNode[]} */([]) // evita never[]
+    };
+
+    if (element.days) {
+      // Ordena as chaves de 'days' e recria um objeto com a mesma estrutura
+      const sortedKeys = Object.keys(element.days).sort((a, b) => a.localeCompare(b));
+
+      /** @type {{ [k: string]: TreeNode }} */
+      const days = {};
+      for (const k of sortedKeys) {
+        days[k] = element.days[k];
+      }
+
+      node.children.push(...createData(days, color));
+    }
+
+    result.push(node);
+  }
+
+  return result;
+};
 
 /**
  * @param {string} jql
  * @param {string} nextPageToken
  * @param {number} maxResults
- * @param {Array<{id:string, fields:{worklog:{maxResults:number, total:number, worklogs:Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>}}}>} accumulatedIssues
+ * @param {Array<IssueItem>} accumulatedIssues
  */
 const getDataIssues = async (jql = '', nextPageToken = '', maxResults = 100, accumulatedIssues = []) => {
   // Monta o corpo da requisição
@@ -33,11 +160,11 @@ const getDataIssues = async (jql = '', nextPageToken = '', maxResults = 100, acc
       });
 
     // Converte a resposta para JSON
-    /** @type {{issues:Array<{id:string, fields:{worklog:{maxResults:number, total:number, worklogs:Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>}}}>, isLast:boolean, nextPageToken:string}} */
+    /** @type {IssueSearchResult} */
     const json = await response.json();
 
     // Acumula as issues retornadas
-    /** @type {Array<{id:string, fields:{worklog:{maxResults:number, total:number, worklogs:Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>}}}>} */
+    /** @type {Array<IssueItem>} */
     const issues = json.issues || [];
 
     accumulatedIssues.push(...issues);
@@ -60,7 +187,7 @@ const getDataIssues = async (jql = '', nextPageToken = '', maxResults = 100, acc
  * @param {string} issueId
  * @param {number} startAt
  * @param {number} maxResults
- * @param {Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>} accumulatedWorklogs
+ * @param {Array<WorklogsItems>} accumulatedWorklogs
  */
 const getDataWorklogs = async (issueId, startAt = 0, maxResults = 100, accumulatedWorklogs = []) => {
   try {
@@ -74,7 +201,7 @@ const getDataWorklogs = async (issueId, startAt = 0, maxResults = 100, accumulat
       });
 
     // Converte a resposta para JSON
-    /** @type {{startAt:number, maxResults:number, total:number, worklogs:Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>}} */
+    /** @type {WorklogItem} */
     const json = await response.json();
 
     // Acumula as issues retornadas
@@ -84,7 +211,7 @@ const getDataWorklogs = async (issueId, startAt = 0, maxResults = 100, accumulat
     const maxResultsResp = json.maxResults || 0;
     /** @type {number} */
     const totalResp = json.total || 0;
-    /** @type {Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>} */
+    /** @type {Array<WorklogsItems>} */
     const worklogs = json.worklogs || [];
 
     accumulatedWorklogs.push(...worklogs);
@@ -106,12 +233,7 @@ const getDataWorklogs = async (issueId, startAt = 0, maxResults = 100, accumulat
 /**
  * @param {number} startAt
  * @param {number} maxResults
- * @param {Array<{
- *   accountId: string,
- *   accountType: string,
- *   active: boolean,
- *   displayName: string
- * }>} accumulatedUsers
+ * @param {Array<UserItem>} accumulatedUsers
  */
 const getDataUsers = async (startAt = 0, maxResults = 1000, accumulatedUsers = []) => {
   try {
@@ -126,12 +248,18 @@ const getDataUsers = async (startAt = 0, maxResults = 1000, accumulatedUsers = [
 
     // Converte a resposta para JSON e trata diferentes formatos
     const json = await response.json();
-    /** @type {Array<{accountId:string, accountType:string, active:boolean, displayName:string}>} */
+    /** @type {Array<UserItem>} */
     let users = [];
 
     // Se a API retornar um objeto com { values: [...] } (algumas endpoints), normalize
-    /** @type {Array<{accountId:string, accountType:string, active:boolean, displayName:string}>} */
-    const iterable = Array.isArray(json) ? json : (json && Array.isArray(json.values) ? json.values : null);
+    /** @type {Array<UserItem>} */
+    const iterable = Array.isArray(json)
+      ? json
+      : (
+        json && Array.isArray(json.values)
+          ? json.values
+          : null
+      );
 
     // Retorna o acumulado atual para evitar lançar erro na UI
     if (!iterable) {
@@ -139,16 +267,18 @@ const getDataUsers = async (startAt = 0, maxResults = 1000, accumulatedUsers = [
     }
 
     // Filtra apenas usuários ativos com accountType 'atlassian'
-    for (const /** @type {{accountId:string, accountType:string, active:boolean, displayName:string}} */ element of iterable) {
+    for (const /** @type {UserItem} */ element of iterable) {
       // Se o elemento não for válido, pula para o próximo
       if (element && element.accountType === 'atlassian' && element.active === true) {
         // Cria o objeto do usuário
-        /** @type {{accountId:string, accountType:string, active:boolean, displayName:string}} */
+        /** @type {UserItem} */
         const user = {
           accountId: element.accountId,
           accountType: element.accountType,
           active: element.active,
-          displayName: element.displayName
+          displayName: element.displayName,
+          timeZone: element.timeZone,
+          avatarUrls: element.avatarUrls
         };
 
         users.push(user);
@@ -171,10 +301,10 @@ const getDataUsers = async (startAt = 0, maxResults = 1000, accumulatedUsers = [
 
 /**
  * Obtém os registros de trabalho (worklogs) de um determinado período
- * @param {{payload:{days:number, color:string, query:string, users:Array<string>|null}}} param0
+ * @param {{payload: WorklogPayload}} param0
  */
 resolver.define('getWorklog', async ({ payload }) => {
-  /** @type {{days:number, color:string, query:string, users:Array<string>|null}} */
+  /** @type {WorklogPayload} */
   const payloadAny = payload ?? { days: 7, color: 'color', query: '', users: [] };
 
   // Valida e ajusta os parâmetros
@@ -193,17 +323,17 @@ resolver.define('getWorklog', async ({ payload }) => {
   searchJql += jql ? ` AND ${jql}` : '';
 
   // Retorno da lista de issues
-  /** @type {Array<{id:string, fields:{worklog:{maxResults:number, total:number, worklogs:Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>}}}>} */
+  /** @type {Array<IssueItem>} */
   const result = await getDataIssues(searchJql);
 
   // Agrupa e soma o tempo por autor
-  /** @type {Record<string, {value:number, days:{[key:string]:{value:number}}}>} */
+  /** @type {Record<string, {value: number, days: {[key: string]: {value: number}}}>} */
   let authorTimes = {};
 
   // Verifica se há issues retornadas
   if (result.length > 0) {
     // Percorre as issues retornadas
-    for (const /** @type {{id:string, fields:{worklog:{maxResults:number, total:number, worklogs:Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>}}}} */ issue of result) {
+    for (const /** @type {IssueItem} */ issue of result) {
       // Obtém o ID da issue
       /** @type {string} */
       const issueId = issue.id;
@@ -222,7 +352,7 @@ resolver.define('getWorklog', async ({ payload }) => {
         continue;
       }
 
-      /** @type {Array<{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}>} */
+      /** @type {Array<WorklogsItems>} */
       let worklogs = [];
 
       // Se houver mais de 20 worklogs, buscar todos via paginação
@@ -233,13 +363,15 @@ resolver.define('getWorklog', async ({ payload }) => {
       }
 
       // Percorre os worklogs da issue
-      for (const /** @type {{author:{accountId:string, displayName:string}, timeSpentSeconds:number, started:string}} */ wl of worklogs) {
-        /** @type {{accountId:string, displayName:string}} */
+      for (const /** @type {WorklogsItems} */ wl of worklogs) {
+        /** @type {UserItem} */
         let author = wl.author;
         /** @type {string} */
         let display_name = author?.displayName || 'Desconhecido';
         /** @type {string} */
         let account_id = author?.accountId || 'unknown';
+        /** @type {string} */
+        let time_zone = author?.timeZone || 'America/Sao_Paulo';
         /** @type {string} */
         let dayKey = wl.started ? wl.started.split('T')[0] : 'unknown';
 
@@ -251,7 +383,7 @@ resolver.define('getWorklog', async ({ payload }) => {
           }
 
           // Verifica a data do worklog
-          /** @type {Date|null} */
+          /** @type {Date | null} */
           let started = wl.started ? new Date(wl.started) : null;
           /** @type {Date} */
           let now = new Date();
@@ -278,7 +410,7 @@ resolver.define('getWorklog', async ({ payload }) => {
     }
 
     // Ordena authorTimes por nome (label) em ordem alfabética
-    /** @type {Array<[string, {value:number, days:{[key:string]:{value:number}}}]>} */
+    /** @type {Array<[string, {value: number, days: {[key: string]: {value: number}}}]>} */
     const sortedEntries = Object
       .entries(authorTimes)
       .sort((a, b) => a[0].localeCompare(b[0]));
@@ -386,89 +518,28 @@ resolver.define('getWorklog', async ({ payload }) => {
   /** @type {string[]} */
   const colorGraph = colorMap[colorKey];
 
-  // // Converte authorTimes para o formato esperado pelo gráfico: [color, label, value, group]
-  // /** @type {Array<{color:string, name:string, value:number, group:string}>} */
-  // const arrayData = Object
-  //   .entries(authorTimes)
-  //   .map(([name, value], idx) => {
-  //     return {
-  //       color: colorGraph[idx % colorGraph.length],// cor
-  //       name: name,                               // label
-  //       value: value,                              // valor
-  //     };
-  //   });
+  // Cria a estrutura de dados para o gráfico
+  /** @type {OutputNode[]} */
   const arrayData = createData(authorTimes, colorGraph);
 
   return arrayData;
 });
 
 /**
- * Nó de entrada (recursivo)
- * @typedef {{ value: number; days?: Record<string, TreeNode> }} TreeNode
- */
-/**
- * Nó de saída (recursivo)
- * @typedef {{ color: string; name: string; value: number; children: OutputNode[] }} OutputNode
- */
-
-/** 
- * @param {Record<string, TreeNode>} data
- * @param {string[]} color
- * @returns {OutputNode[]}
- * */
-const createData = (data, color) => {
-  /** @type {OutputNode[]} */
-  const result = [];
-
-  for (const key in data) {
-    if (!Object.hasOwn(data, key)) continue;
-
-    /** @type {TreeNode} */
-    const element = data[key];
-
-    /** @type {OutputNode} */
-    const node = {
-      // Usa o índice atual para começar da primeira cor
-      color: color[result.length % color.length],
-      name: key,
-      value: element.value,
-      children: /** @type {OutputNode[]} */([]) // evita never[]
-    };
-
-    if (element.days) {
-      // Ordena as chaves de 'days' e recria um objeto com a mesma estrutura
-      const sortedKeys = Object.keys(element.days).sort((a, b) => a.localeCompare(b));
-
-      /** @type {{ [k: string]: TreeNode }} */
-      const days = {};
-      for (const k of sortedKeys) {
-        days[k] = element.days[k];
-      }
-
-      node.children.push(...createData(days, color));
-    }
-
-    result.push(node);
-  }
-
-  return result;
-};
-
-
-/**
  * Retorna a lista de usuários ativos do Jira (accountType='atlassian' e active=true)
  * no formato { label: displayName, value: accountId }
+ * @returns {Array<{label: string, value: string}>}
  */
 resolver.define('getUsers', async () => {
   try {
     // Busca todos os usuários ativos
-    /** @type {Array<{accountId:string, accountType:string, active:boolean, displayName:string }>} */
+    /** @type {Array<UserItem>} */
     const users = await getDataUsers();
 
     return users
-      .filter((/** @type {{accountId:string, accountType:string, active:boolean, displayName:string}} */ user) =>
+      .filter((/** @type {UserItem} */ user) =>
         user.accountType === 'atlassian' && user.active === true)
-      .map((/** @type {{ displayName:string; accountId:string; }} */ user) => ({
+      .map((/** @type {UserItem} */ user) => ({
         label: user.displayName,
         value: user.accountId
       }))
