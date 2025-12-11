@@ -17,7 +17,7 @@ const resolver = new Resolver();
  *  accountId: string,
  *  accountType: string,
  *  displayName: string,
- *  timeZone: string,
+ *  timeZone?: string,
  *  avatarUrls: IconItem,
  *  active: boolean
  * }} UserItem
@@ -49,6 +49,7 @@ const resolver = new Resolver();
 /**
  * @typedef {{
  *  id: string,
+ *  key?: string,
  *  fields: FieldItem
  * }} IssueItem
  */
@@ -65,7 +66,8 @@ const resolver = new Resolver();
  * Nó de entrada (recursivo)
  * @typedef {{
  *  value: number;
- *  days?: Record<string, TreeNode>
+ *  days?: Record<string, TreeNode>,
+ *  issues?: Record<string, TreeNode>
  * }} TreeNode
  */
 
@@ -112,17 +114,20 @@ const createData = (data, color) => {
       children: /** @type {OutputNode[]} */([]) // evita never[]
     };
 
-    if (element.days) {
-      // Ordena as chaves de 'days' e recria um objeto com a mesma estrutura
-      const sortedKeys = Object.keys(element.days).sort((a, b) => a.localeCompare(b));
+    // Próximo nível pode ser 'days' (usuário -> dia) ou 'issues' (dia -> issue)
+    /** @type {Record<string, TreeNode> | undefined} */
+    const childMap = element.days || element.issues;
+    if (childMap) {
+      // Ordena as chaves e recria um objeto com a mesma estrutura
+      const sortedKeys = Object.keys(childMap).sort((a, b) => a.localeCompare(b));
 
       /** @type {{ [k: string]: TreeNode }} */
-      const days = {};
+      const ordered = {};
       for (const k of sortedKeys) {
-        days[k] = element.days[k];
+        ordered[k] = childMap[k];
       }
 
-      node.children.push(...createData(days, color));
+      node.children.push(...createData(ordered, color));
     }
 
     result.push(node);
@@ -326,8 +331,8 @@ resolver.define('getWorklog', async ({ payload }) => {
   /** @type {Array<IssueItem>} */
   const result = await getDataIssues(searchJql);
 
-  // Agrupa e soma o tempo por autor
-  /** @type {Record<string, {value: number, days: {[key: string]: {value: number}}}>} */
+  // Agrupa e soma o tempo por autor -> dia -> issue
+  /** @type {Record<string, {value: number, days: {[day: string]: {value: number, issues: {[issue: string]: {value: number}}}}}>} */
   let authorTimes = {};
 
   // Verifica se há issues retornadas
@@ -362,6 +367,10 @@ resolver.define('getWorklog', async ({ payload }) => {
         worklogs = issue.fields?.worklog?.worklogs || [];
       }
 
+      // Label do issue (para o 3º nível)
+      /** @type {string} */
+      const issueKey = (/** @type {{key?: string}} */(issue))?.key || issueId;
+
       // Percorre os worklogs da issue
       for (const /** @type {WorklogsItems} */ wl of worklogs) {
         /** @type {UserItem} */
@@ -395,7 +404,12 @@ resolver.define('getWorklog', async ({ payload }) => {
           if (started && started >= analyzeStart) {
             // Garante que a chave do dia exista antes de acumular horas
             if (!(dayKey in authorTimes[display_name].days)) {
-              authorTimes[display_name].days[dayKey] = { value: 0 };
+              authorTimes[display_name].days[dayKey] = { value: 0, issues: {} };
+            }
+
+            // Garante que o issue exista dentro do dia
+            if (!(issueKey in authorTimes[display_name].days[dayKey].issues)) {
+              authorTimes[display_name].days[dayKey].issues[issueKey] = { value: 0 };
             }
 
             // Converte o tempo gasto para horas e acumula
@@ -404,13 +418,14 @@ resolver.define('getWorklog', async ({ payload }) => {
 
             authorTimes[display_name].value += hours;
             authorTimes[display_name].days[dayKey].value += hours;
+            authorTimes[display_name].days[dayKey].issues[issueKey].value += hours;
           }
         }
       }
     }
 
     // Ordena authorTimes por nome (label) em ordem alfabética
-    /** @type {Array<[string, {value: number, days: {[key: string]: {value: number}}}]>} */
+    /** @type {Array<[string, {value: number, days: {[day: string]: {value: number, issues: {[issue: string]: {value: number}}}}}]>} */
     const sortedEntries = Object
       .entries(authorTimes)
       .sort((a, b) => a[0].localeCompare(b[0]));

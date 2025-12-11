@@ -2,6 +2,8 @@
   "name": "tooark-gadget-worklog",
   "version": "4.32.0",
   "description": "Worklog por usuário nos últimos N dias",
+  "private": true,
+  "license": "MIT",
   "scripts": {
     "build": "npm run build --workspace=frontend",
     "clean": "npm run clean --workspace=frontend",
@@ -33,7 +35,5 @@
   "workspaces": [
     "src/backend",
     "src/frontend"
-  ],
-  "private": true,
-  "license": "MIT"
+  ]
 }
