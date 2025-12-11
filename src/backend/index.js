@@ -3,6 +3,33 @@ import api, { route } from '@forge/api';
 
 const resolver = new Resolver();
 
+/** @type {string | null} */
+let jiraBaseUrlCache = null;
+
+/**
+ * Obtém o baseUrl do Jira (ex: https://grupojacto.atlassian.net)
+ * com cache em memória para evitar chamadas repetidas.
+ * @returns {Promise<string | null>}
+ */
+const getJiraBaseUrl = async () => {
+  if (jiraBaseUrlCache) return jiraBaseUrlCache;
+
+  try {
+    const url = route`/rest/api/3/serverInfo`;
+    const response = await api.asApp().requestJira(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    /** @type {{ baseUrl?: string }} */
+    const json = await response.json();
+    jiraBaseUrlCache = json?.baseUrl || null;
+    return jiraBaseUrlCache;
+  } catch (e) {
+    console.error("getJiraBaseUrl error:", e);
+    return null;
+  }
+};
+
 /**
  * @typedef {{
  *   "16x16": string | null,
@@ -43,6 +70,7 @@ const resolver = new Resolver();
 /**
  * @typedef {{
  *  worklog: WorklogItem
+ *  summary?: string
  * }} FieldItem
  */
 
@@ -67,7 +95,9 @@ const resolver = new Resolver();
  * @typedef {{
  *  value: number;
  *  days?: Record<string, TreeNode>,
- *  issues?: Record<string, TreeNode>
+ *  issues?: Record<string, TreeNode>,
+ *  summary?: string,
+ *  url?: string
  * }} TreeNode
  */
 
@@ -77,7 +107,9 @@ const resolver = new Resolver();
  *  color: string;
  *  name: string;
  *  value: number;
- *  children: OutputNode[]
+ *  children: OutputNode[],
+ *  summary?: string,
+ *  url?: string
  * }} OutputNode
  */
 
@@ -113,6 +145,13 @@ const createData = (data, color) => {
       value: element.value,
       children: /** @type {OutputNode[]} */([]) // evita never[]
     };
+
+    if (element.summary) {
+      node.summary = element.summary;
+    }
+    if (element.url) {
+      node.url = element.url;
+    }
 
     // Próximo nível pode ser 'days' (usuário -> dia) ou 'issues' (dia -> issue)
     /** @type {Record<string, TreeNode> | undefined} */
@@ -150,7 +189,7 @@ const getDataIssues = async (jql = '', nextPageToken = '', maxResults = 100, acc
     nextPageToken,
     maxResults,
     expand: 'names',
-    fields: ['worklog']
+    fields: ['worklog', 'summary']
   };
 
   try {
@@ -320,6 +359,9 @@ resolver.define('getWorklog', async ({ payload }) => {
   /** @type {string} */
   const jql = payloadAny.query;
 
+  // Base URL do Jira para montar links de browse (ex: https://xxx.atlassian.net)
+  const jiraBaseUrl = await getJiraBaseUrl();
+
   // Monta o JQL para buscar as issues com worklogs no período especificado
   /** @type {string} */
   let searchJql = '';
@@ -332,7 +374,7 @@ resolver.define('getWorklog', async ({ payload }) => {
   const result = await getDataIssues(searchJql);
 
   // Agrupa e soma o tempo por autor -> dia -> issue
-  /** @type {Record<string, {value: number, days: {[day: string]: {value: number, issues: {[issue: string]: {value: number}}}}}>} */
+  /** @type {Record<string, {value: number, days: {[day: string]: {value: number, issues: {[issue: string]: {value: number, summary?: string, url?: string}}}}}>} */
   let authorTimes = {};
 
   // Verifica se há issues retornadas
@@ -367,9 +409,15 @@ resolver.define('getWorklog', async ({ payload }) => {
         worklogs = issue.fields?.worklog?.worklogs || [];
       }
 
-      // Label do issue (para o 3º nível)
+      // Label e metadados do issue (para o 3º nível)
       /** @type {string} */
-      const issueKey = (/** @type {{key?: string}} */(issue))?.key || issueId;
+      const browseKey = (/** @type {{key?: string}} */(issue))?.key || '';
+      /** @type {string} */
+      const issueKey = browseKey || issueId;
+      /** @type {string | undefined} */
+      const issueSummary = issue.fields?.summary;
+      /** @type {string | undefined} */
+      const issueUrl = (jiraBaseUrl && browseKey) ? `${jiraBaseUrl}/browse/${browseKey}` : undefined;
 
       // Percorre os worklogs da issue
       for (const /** @type {WorklogsItems} */ wl of worklogs) {
@@ -409,7 +457,11 @@ resolver.define('getWorklog', async ({ payload }) => {
 
             // Garante que o issue exista dentro do dia
             if (!(issueKey in authorTimes[display_name].days[dayKey].issues)) {
-              authorTimes[display_name].days[dayKey].issues[issueKey] = { value: 0 };
+              authorTimes[display_name].days[dayKey].issues[issueKey] = {
+                value: 0,
+                summary: issueSummary,
+                url: issueUrl
+              };
             }
 
             // Converte o tempo gasto para horas e acumula

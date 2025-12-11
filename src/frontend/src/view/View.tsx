@@ -1,5 +1,6 @@
 import ReactECharts from 'echarts-for-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { router } from '@forge/bridge';
 
 import { useForgeInvoke } from '../hooks';
 import type { TreeNode, ViewProps } from '../types';
@@ -85,6 +86,22 @@ export default function View(props: ViewProps) {
 
       const node = currentItems[idx];
 
+      // Se for um issue (tem URL), abre em nova aba
+      if (node?.url) {
+        try {
+          // Em Custom UI (Forge), window.open pode ser bloqueado por sandbox.
+          // router.open abre corretamente fora do iframe.
+          void router.open(node.url);
+        } catch {
+          try {
+            window.location.href = node.url;
+          } catch {
+            console.error('Failed to open URL:', node.url);
+          }
+        }
+        return;
+      }
+
       // Se o nó tiver filhos, desce um nível
       if (node && node.children && node.children.length > 0) {
         setPath((prev) => [...prev, node]);
@@ -117,9 +134,26 @@ export default function View(props: ViewProps) {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      valueFormatter: function (value: number) {
-        return value + 'h';
-      },
+      formatter: function (params: any) {
+        const p = Array.isArray(params) ? params[0] : params;
+        const idx = p?.dataIndex;
+        const node = idx != null ? currentItems[idx] : undefined;
+
+        const escapeHtml = (s: string) =>
+          s
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+
+        const name = escapeHtml(String(node?.name ?? p?.name ?? ''));
+        const summary = node?.summary ? `: ${escapeHtml(String(node.summary))}` : '';
+        const rawValue = p?.value;
+        const value = typeof rawValue === 'number' ? rawValue : (rawValue?.value ?? rawValue);
+
+        return `<strong>${name}</strong>${summary}<br/>${value}h`;
+      }
     },
     toolbox: {
       orient: 'horizontal',
@@ -143,7 +177,7 @@ export default function View(props: ViewProps) {
             var table =
               '<table style="width:100%;text-align:left"><tbody>' +
               '<tr>' +
-              '<th>Nome</th>' +
+              '<th>Título</th>' +
               '<th>Horas</th>' +
               '</tr>';
 
