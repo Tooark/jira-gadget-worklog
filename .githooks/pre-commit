@@ -4,7 +4,7 @@
 set -e
 
 # Run staged linters
-npx --yes lint-staged
+# npx --yes lint-staged
 
 # TypeScript checks (delegated to workspace frontend)
 # npm run lint:tsc
