@@ -4,15 +4,10 @@ import Form, { Field } from '@atlaskit/form';
 import TextField from '@atlaskit/textfield';
 import Select from '@atlaskit/select';
 
-import type { FormValues, View } from '../types';
+import type { FormValues, EditProps } from '../types';
 import { useForgeInvoke } from '../hooks';
 
-interface Props {
-  formValues: FormValues;
-  view: View;
-}
-
-export default function Edit(props: Props) {
+export default function Edit(props: EditProps) {
   // Busca a lista de usuários (backend deve expor 'getUsers')
   const users = useForgeInvoke<Array<{ label: string; value: string }>>('getUsers');
 

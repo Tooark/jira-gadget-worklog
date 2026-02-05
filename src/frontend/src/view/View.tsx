@@ -1,6 +1,14 @@
+import { router } from '@forge/bridge';
 import ReactECharts from 'echarts-for-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { router } from '@forge/bridge';
+
+// Tipos locais mínimos para evitar dependência direta das exports dos tipos do echarts
+type ChartLike = {
+  on?: (event: string, handler: (ev?: unknown) => void) => void;
+  off?: (event: string) => void;
+};
+
+type Option = Record<string, unknown>;
 
 import { useForgeInvoke } from '../hooks';
 import type { TreeNode, ViewProps } from '../types';
@@ -23,8 +31,7 @@ export default function View(props: ViewProps) {
   const [path, setPath] = useState<TreeNode[]>([]);
 
   // Título base
-  const title =
-    'Worklog dos últimos ' + days + ' dias';
+  const title = 'Worklog dos últimos ' + days + ' dias';
 
   // Função util para reduzir nomes (primeiro + último)
   const shortName = useCallback((full: string) => {
@@ -75,9 +82,14 @@ export default function View(props: ViewProps) {
 
   // Handler de clique para descer um nível
   const handleClick = useCallback(
-    (params: any) => {
-      // params.name é o rótulo mostrado
-      const idx = params?.dataIndex;
+    (params: unknown) => {
+      const p = (Array.isArray(params) ? params[0] : params) as {
+        dataIndex?: number;
+        name?: string;
+        value?: unknown;
+      };
+
+      const idx = p?.dataIndex;
 
       // Se o índice for inválido, não faz nada
       if (idx == null) {
@@ -96,7 +108,7 @@ export default function View(props: ViewProps) {
           try {
             window.location.href = node.url;
           } catch {
-            console.error('Failed to open URL:', node.url);
+            // ignore
           }
         }
         return;
@@ -116,7 +128,7 @@ export default function View(props: ViewProps) {
   }, []);
 
   // Construção do option multi-drilldown
-  const option: any = {
+  const option: Option = {
     animationDurationUpdate: 300,
     animationEasing: 'cubicInOut',
     title: {
@@ -124,7 +136,7 @@ export default function View(props: ViewProps) {
       text:
         title +
         (canGoBack
-          ? ` [${path.map((p) => shortName(p.name)).join(' › ')}: ${Math.round(path.reduce((sum, p) => sum + p.value, 0) * 10) / 10}h]`
+          ? ` [${path.map((p) => shortName(p.name)).join(' › ')}: ${Math.round(path[path.length - 1].value * 10) / 10}h]`
           : ' [Total: ' +
             Math.round(values.reduce((sum, v) => sum + v, 0) * 10) / 10 +
             'h]'),
@@ -134,8 +146,12 @@ export default function View(props: ViewProps) {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      formatter: function (params: any) {
-        const p = Array.isArray(params) ? params[0] : params;
+      formatter: function (params: unknown) {
+        const p = (Array.isArray(params) ? params[0] : params) as {
+          dataIndex?: number;
+          name?: string;
+          value?: unknown;
+        };
         const idx = p?.dataIndex;
         const node = idx != null ? currentItems[idx] : undefined;
 
@@ -148,12 +164,19 @@ export default function View(props: ViewProps) {
             .replaceAll("'", '&#39;');
 
         const name = escapeHtml(String(node?.name ?? p?.name ?? ''));
-        const summary = node?.summary ? `: ${escapeHtml(String(node.summary))}` : '';
+        const summary = node?.summary
+          ? `: ${escapeHtml(String(node.summary))}`
+          : '';
         const rawValue = p?.value;
-        const value = typeof rawValue === 'number' ? rawValue : (rawValue?.value ?? rawValue);
+        const value =
+          typeof rawValue === 'number'
+            ? rawValue
+            : rawValue && typeof rawValue === 'object' && 'value' in rawValue
+              ? (rawValue as { value?: unknown }).value
+              : rawValue;
 
         return `<strong>${name}</strong>${summary}<br/>${value}h`;
-      }
+      },
     },
     toolbox: {
       orient: 'horizontal',
@@ -171,24 +194,35 @@ export default function View(props: ViewProps) {
         dataView: {
           show: true,
           title: 'Visualizar Dados',
-          optionToContent: function (opt: { series: any; xAxis: any }) {
-            var axisData = (opt?.xAxis?.[0]?.data || []) as string[];
-            var series = opt.series || [];
-            var table =
+          optionToContent: function (opt: unknown) {
+            type OptType = {
+              xAxis?: Array<{ data?: string[] }>;
+              series?: Array<{ data?: Array<unknown> }>;
+            };
+
+            const o = (opt as OptType) || {};
+            const axisData = (o?.xAxis?.[0]?.data || []) as string[];
+            const series = o.series || [];
+            let table =
               '<table style="width:100%;text-align:left"><tbody>' +
               '<tr>' +
               '<th>Título</th>' +
               '<th>Horas</th>' +
               '</tr>';
 
-            for (var i = 0, l = axisData.length; i < l; i++) {
+            for (let i = 0, l = axisData.length; i < l; i++) {
+              const cell = series[0]?.data?.[i] as unknown;
+              const value =
+                cell && typeof cell === 'object' && 'value' in (cell as object)
+                  ? (cell as { value?: unknown }).value
+                  : cell;
               table +=
                 '<tr>' +
                 '<td>' +
                 axisData[i] +
                 '</td>' +
                 '<td>' +
-                (series[0]?.data?.[i]?.value ?? series[0]?.data?.[i] ?? '') +
+                (value ?? '') +
                 '</td>' +
                 '</tr>';
             }
@@ -239,7 +273,7 @@ export default function View(props: ViewProps) {
   };
 
   // Registrar evento de clique diretamente no chart
-  const chartRef = useRef<any>(null);
+  const chartRef = useRef<ChartLike | null>(null);
   useEffect(() => {
     const chart = chartRef.current;
 
@@ -249,15 +283,21 @@ export default function View(props: ViewProps) {
 
     try {
       // Remove listener antigo e adiciona o atual
-      chart.off && chart.off('click');
-      chart.on && chart.on('click', handleClick);
+      if (typeof chart.off === 'function') {
+        chart.off('click');
+      }
+      if (typeof chart.on === 'function') {
+        chart.on('click', (ev: unknown) => handleClick(ev));
+      }
     } catch {
       // noop
     }
 
     return () => {
       try {
-        chart?.off && chart.off('click');
+        if (chart && typeof chart.off === 'function') {
+          chart.off('click');
+        }
       } catch {
         // noop
       }
@@ -270,7 +310,7 @@ export default function View(props: ViewProps) {
         option={option}
         style={{ height: 400 }}
         onChartReady={(chart) => {
-          chartRef.current = chart;
+          chartRef.current = chart as ChartLike;
         }}
       />
     </div>
