@@ -3,7 +3,8 @@ modules:
     - key: tooark-gadget-worklog
       title: Worklog Gadget
       description: Worklog por usuário nos últimos N dias
-      thumbnail: https://www.svgrepo.com/show/511175/timer.svg
+      thumbnail: resource:static;worklog-chart.svg
+      icon: resource:static;worklog-chart.svg
       resource: main
       resolver:
         function: resolver
@@ -16,6 +17,8 @@ modules:
 resources:
   - key: main
     path: src/frontend/dist
+  - key: static
+    path: src/static
 
 permissions:
   content:

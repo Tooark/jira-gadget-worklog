@@ -1,5 +1,6 @@
 import Resolver from '@forge/resolver';
 import api, { route } from '@forge/api';
+import { DateTime } from 'luxon';
 
 const resolver = new Resolver();
 
@@ -422,15 +423,19 @@ resolver.define('getWorklog', async ({ payload }) => {
       // Percorre os worklogs da issue
       for (const /** @type {WorklogsItems} */ wl of worklogs) {
         /** @type {UserItem} */
-        let author = wl.author;
+        const author = wl.author;
         /** @type {string} */
-        let display_name = author?.displayName || 'Desconhecido';
+        const display_name = author?.displayName || 'Desconhecido';
         /** @type {string} */
-        let account_id = author?.accountId || 'unknown';
+        const account_id = author?.accountId || 'unknown';
         /** @type {string} */
-        let time_zone = author?.timeZone || 'America/Sao_Paulo';
+        const time_zone = author?.timeZone || 'America/Sao_Paulo';
+        /** @type {DateTime | null} */
+        const started = wl.started ? DateTime.fromISO(wl.started).setZone(time_zone) : null;
+        /** @type {string | null} */
+        const startedString = started ? started.toISODate() : 'unknown';
         /** @type {string} */
-        let dayKey = wl.started ? wl.started.split('T')[0] : 'unknown';
+        const dayKey = startedString ? startedString : 'unknown';
 
         // Considera apenas worklogs com autor válido e, se fornecido, dentro da lista de usuários
         if (display_name && (users.length === 0 || users.includes(account_id))) {
@@ -440,13 +445,10 @@ resolver.define('getWorklog', async ({ payload }) => {
           }
 
           // Verifica a data do worklog
-          /** @type {Date | null} */
-          let started = wl.started ? new Date(wl.started) : null;
-          /** @type {Date} */
-          let now = new Date();
-          now.setHours(0, 0, 0, 0); // zera horas, minutos, segundos e ms
-          /** @type {Date} */
-          let analyzeStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+          /** @type {DateTime} */
+          const now = DateTime.now().setZone(time_zone).set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
+          /** @type {DateTime} */
+          const analyzeStart = now.minus({ days });
 
           // Considera apenas worklogs dentro do período especificado
           if (started && started >= analyzeStart) {
