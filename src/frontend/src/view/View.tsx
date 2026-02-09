@@ -2,6 +2,9 @@ import { router } from '@forge/bridge';
 import ReactECharts from 'echarts-for-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useForgeInvoke } from '../hooks';
+import type { TreeNode, ViewProps } from '../types';
+
 // Tipos locais mínimos para evitar dependência direta das exports dos tipos do echarts
 type ChartLike = {
   on?: (event: string, handler: (ev?: unknown) => void) => void;
@@ -9,9 +12,6 @@ type ChartLike = {
 };
 
 type Option = Record<string, unknown>;
-
-import { useForgeInvoke } from '../hooks';
-import type { TreeNode, ViewProps } from '../types';
 
 // Componente de gráfico com drilldown múltiplo
 export default function View(props: ViewProps) {
@@ -140,8 +140,8 @@ export default function View(props: ViewProps) {
           : ' [Total: ' +
             Math.round(values.reduce((sum, v) => sum + v, 0) * 10) / 10 +
             'h]'),
-      top: 0,
-      left: 0,
+      top: '10px',
+      left: '10px',
     },
     tooltip: {
       trigger: 'axis',
@@ -180,8 +180,8 @@ export default function View(props: ViewProps) {
     },
     toolbox: {
       orient: 'horizontal',
-      top: 0,
-      right: 0,
+      top: '10px',
+      right: '10px',
       feature: {
         // Botão customizado de voltar
         myBack: {
@@ -241,9 +241,9 @@ export default function View(props: ViewProps) {
       },
     },
     grid: {
-      left: 0,
-      right: 0,
-      top: '60px',
+      left: '20px',
+      right: '20px',
+      top: '65px',
       bottom: '20px',
       containLabel: true,
     },
@@ -305,10 +305,10 @@ export default function View(props: ViewProps) {
   }, [handleClick, currentItems]);
 
   return (
-    <div style={{ height: 420 }}>
+    <div style={{ height: '100%', width: '100%', margin: 0, padding: 0 }}>
       <ReactECharts
         option={option}
-        style={{ height: 400 }}
+        style={{ height: '100%', width: '100%', margin: 0, padding: 0 }}
         onChartReady={(chart) => {
           chartRef.current = chart as ChartLike;
         }}
