@@ -2,6 +2,18 @@ import Resolver from '@forge/resolver';
 import api, { route } from '@forge/api';
 import { DateTime } from 'luxon';
 
+// Tipagens centralizadas (definidas em types.d.ts)
+/** @typedef {import('./types').IconItem} IconItem */
+/** @typedef {import('./types').UserItem} UserItem */
+/** @typedef {import('./types').WorklogsItems} WorklogsItems */
+/** @typedef {import('./types').WorklogItem} WorklogItem */
+/** @typedef {import('./types').FieldItem} FieldItem */
+/** @typedef {import('./types').IssueItem} IssueItem */
+/** @typedef {import('./types').IssueSearchResult} IssueSearchResult */
+/** @typedef {import('./types').TreeNode} TreeNode */
+/** @typedef {import('./types').OutputNode} OutputNode */
+/** @typedef {import('./types').WorklogPayload} WorklogPayload */
+
 const resolver = new Resolver();
 
 /** @type {string | null} */
@@ -30,98 +42,6 @@ const getJiraBaseUrl = async () => {
     return null;
   }
 };
-
-/**
- * @typedef {{
- *   "16x16": string | null,
- *   "24x24": string | null,
- *   "32x32": string | null,
- *   "48x48": string | null
- * }} IconItem
- */
-
-/**
- * @typedef {{
- *  accountId: string,
- *  accountType: string,
- *  displayName: string,
- *  timeZone?: string,
- *  avatarUrls: IconItem,
- *  active: boolean
- * }} UserItem
- */
-
-/**
- * @typedef {{
- *  author: UserItem,
- *  timeSpentSeconds: number,
- *  started: string
- * }} WorklogsItems
- */
-
-/**
- * @typedef {{
- *  startAt: number,
- *  maxResults: number,
- *  total: number,
- *  worklogs: Array<WorklogsItems>
- * }} WorklogItem
- */
-
-/**
- * @typedef {{
- *  worklog: WorklogItem
- *  summary?: string
- * }} FieldItem
- */
-
-/**
- * @typedef {{
- *  id: string,
- *  key?: string,
- *  fields: FieldItem
- * }} IssueItem
- */
-
-/**
- * @typedef {{
- *  issues: Array<IssueItem>,
- *  isLast: boolean,
- *  nextPageToken: string
- * }} IssueSearchResult
- */
-
-/**
- * Nó de entrada (recursivo)
- * @typedef {{
- *  value: number;
- *  days?: Record<string, TreeNode>,
- *  issues?: Record<string, TreeNode>,
- *  summary?: string,
- *  url?: string
- * }} TreeNode
- */
-
-/**
- * Nó de saída (recursivo)
- * @typedef {{
- *  color: string;
- *  name: string;
- *  value: number;
- *  children: OutputNode[],
- *  summary?: string,
- *  url?: string
- * }} OutputNode
- */
-
-/**
- * @typedef {{
- *  days: number,
- *  color: string,
- *  query: string,
- *  users: Array<string> | null
- * }} WorklogPayload
- */
 
 /** 
  * @param {Record<string, TreeNode>} data
@@ -621,3 +541,6 @@ resolver.define('getUsers', async () => {
 
 
 export const handler = resolver.getDefinitions();
+
+// Exportações nomeadas para permitir testes unitários das funções internas
+export { createData, getDataIssues, getDataWorklogs, getDataUsers, getJiraBaseUrl };

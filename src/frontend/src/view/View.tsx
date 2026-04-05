@@ -16,7 +16,8 @@ type Option = Record<string, unknown>;
 // Componente de gráfico com drilldown múltiplo
 export default function View(props: ViewProps) {
   // Dias para buscar (padrão 7)
-  const days = (props.formValues?.days || 7) < 0 ? 7 : props.formValues.days;
+  const configuredDays = props.formValues?.days ?? 7;
+  const days = configuredDays < 0 ? 7 : configuredDays;
   // Chama o backend getWorklog para os últimos N dias (padrão 7)
   const rawData = useForgeInvoke<TreeNode[]>('getWorklog', {
     days,
@@ -24,8 +25,6 @@ export default function View(props: ViewProps) {
     query: props.formValues?.jql || '',
     users: props.formValues?.users || [],
   });
-
-  props.formValues.days = days;
 
   // Navegação: pilha de níveis selecionados para drilldown. Root = []
   const [path, setPath] = useState<TreeNode[]>([]);

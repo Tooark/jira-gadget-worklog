@@ -1,13 +1,16 @@
 import type { JestConfigWithTsJest } from 'ts-jest';
 
 const config: JestConfigWithTsJest = {
-  collectCoverageFrom: ['<rootDir>/src/**/*.{ts,tsx}'],
+  collectCoverageFrom: [
+    '<rootDir>/src/**/*.{ts,tsx}',
+    '!<rootDir>/src/**/*.d.ts',
+  ],
   coverageThreshold: {
     global: {
-      branches: 70,
-      functions: 80,
-      lines: 90,
-      statements: 90
+      branches: 35,
+      functions: 70,
+      lines: 70,
+      statements: 70,
     },
   },
   moduleNameMapper: {

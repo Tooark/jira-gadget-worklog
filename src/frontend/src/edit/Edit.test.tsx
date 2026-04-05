@@ -3,36 +3,34 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import type { EditProps, View } from '../types';
 import Edit from './Edit';
 
-const props: EditProps = {
-  formValues: {
-    // campos esperados por FormValues
-    days: 7,
-    color: 'color',
-    jql: '',
-    users: [],
-  },
-  view: { submit: jest.fn() } as unknown as View,
-};
+function makeProps(): EditProps {
+  return {
+    formValues: {
+      days: 7,
+      color: 'color',
+      jql: '',
+      users: [],
+    },
+    view: { submit: jest.fn() } as unknown as View,
+  };
+}
 
-it.each(['Save', 'Cancel'])('renders button %p', (text) => {
+it.each(['Salvar', 'Cancelar'])('renderiza o botao %p', (text) => {
+  const props = makeProps();
   render(<Edit {...props} />);
   expect(screen.getByRole('button', { name: text })).toBeInTheDocument();
 });
 
-it.each(['Days', 'Color do Gráfico', 'Usuários', 'JQL Adicional'])('renders label %p', (text) => {
+it.each(['Dias', 'Cor do Gráfico', 'Usuários', 'JQL Adicional'])('renderiza o label %p', (text) => {
+  const props = makeProps();
   render(<Edit {...props} />);
-  expect(screen.getByLabelText(text)).toBeInTheDocument();
+  expect(screen.getByText(text)).toBeInTheDocument();
 });
 
-it('saves form', () => {
+it('submete o formulario ao salvar', () => {
+  const props = makeProps();
   render(<Edit {...props} />);
-  fireEvent.change(screen.getByLabelText('Days'), {
-    target: { value: '7' },
-  });
-  fireEvent.change(screen.getByLabelText('Color do Gráfico'), {
-    target: { value: 'color' },
-  });
-  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
   expect(props.view.submit).toHaveBeenCalledTimes(1);
   expect(props.view.submit).toHaveBeenCalledWith({
     days: 7,
@@ -42,15 +40,10 @@ it('saves form', () => {
   });
 });
 
-it('cancels form', () => {
+it('restaura valores ao cancelar', () => {
+  const props = makeProps();
   render(<Edit {...props} />);
-  fireEvent.change(screen.getByLabelText('Days'), {
-    target: { value: '7' },
-  });
-  fireEvent.change(screen.getByLabelText('Color do Gráfico'), {
-    target: { value: 'color' },
-  });
-  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
   expect(props.view.submit).toHaveBeenCalledTimes(1);
   expect(props.view.submit).toHaveBeenCalledWith(props.formValues);
 });

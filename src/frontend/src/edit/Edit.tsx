@@ -22,9 +22,12 @@ export default function Edit(props: EditProps) {
     { label: 'Vermelho', value: 'red' },
   ];
 
-  props.formValues = {
+  const formValues: FormValues = {
     ...(props.formValues ?? {}),
     days: props.formValues?.days ?? 7,
+    color: props.formValues?.color ?? 'color',
+    jql: props.formValues?.jql ?? '',
+    users: props.formValues?.users ?? [],
   };
 
   return (
@@ -35,7 +38,7 @@ export default function Edit(props: EditProps) {
             <Field
               name="days"
               label="Dias"
-              defaultValue={props.formValues.days}
+              defaultValue={formValues.days}
             >
               {({ fieldProps }) => (
                 <TextField {...fieldProps} type="number" placeholder="7" />
@@ -45,7 +48,7 @@ export default function Edit(props: EditProps) {
             <Field
               name="color"
               label="Cor do Gráfico"
-              defaultValue={props.formValues.color}
+              defaultValue={formValues.color}
             >
               {({ fieldProps }) => (
                 <Select
@@ -67,7 +70,7 @@ export default function Edit(props: EditProps) {
             <Field
               name="users"
               label="Usuários"
-              defaultValue={props.formValues.users ?? []}
+              defaultValue={formValues.users}
             >
               {({ fieldProps }) => (
                 <Select
@@ -91,7 +94,7 @@ export default function Edit(props: EditProps) {
             <Field
               name="jql"
               label="JQL Adicional"
-              defaultValue={props.formValues.jql}
+              defaultValue={formValues.jql}
             >
               {({ fieldProps }) => <TextField {...fieldProps} />}
             </Field>
@@ -107,7 +110,7 @@ export default function Edit(props: EditProps) {
                 Salvar
               </Button>
 
-              <Button onClick={() => props.view.submit(props.formValues)}>
+              <Button onClick={() => props.view.submit(formValues)}>
                 Cancelar
               </Button>
             </ButtonGroup>
