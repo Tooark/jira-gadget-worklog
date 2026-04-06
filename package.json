@@ -19,8 +19,8 @@
     "test": "npm run test:ci --workspace=frontend"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.4.1",
-    "@commitlint/config-conventional": "^20.4.1",
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
     "@eslint/compat": "^2.0.4",
     "@forge/cli": "^12.14.0",
     "eslint": "9.36.0",
