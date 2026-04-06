@@ -6,6 +6,7 @@ import Select from '@atlaskit/select';
 
 import type { FormValues, EditProps } from '../types';
 import { useForgeInvoke } from '../hooks';
+import { decode } from '../helpers';
 
 export default function Edit(props: EditProps) {
   // Busca a lista de usuários (backend deve expor 'getUsers')
@@ -26,7 +27,7 @@ export default function Edit(props: EditProps) {
     ...(props.formValues ?? {}),
     days: props.formValues?.days ?? 7,
     color: props.formValues?.color ?? 'color',
-    jql: props.formValues?.jql ?? '',
+    jql: decode(props.formValues?.jql ?? ''),
     users: props.formValues?.users ?? [],
   };
 

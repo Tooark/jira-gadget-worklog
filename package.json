@@ -16,8 +16,6 @@
     "lint:forge": "forge lint",
     "lint:tsc": "npm run lint:tsc --workspace=frontend",
     "login": "forge login",
-    "prepare": "git config core.hooksPath .githooks",
-    "storybook": "npm run storybook --prefix=src/storybook",
     "test": "npm run test:ci --workspace=frontend"
   },
   "devDependencies": {

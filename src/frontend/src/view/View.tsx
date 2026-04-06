@@ -3,6 +3,7 @@ import ReactECharts from 'echarts-for-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useForgeInvoke } from '../hooks';
+import { decode } from '../helpers';
 import type { TreeNode, ViewProps } from '../types';
 
 // Tipos locais mínimos para evitar dependência direta das exports dos tipos do echarts
@@ -22,7 +23,7 @@ export default function View(props: ViewProps) {
   const rawData = useForgeInvoke<TreeNode[]>('getWorklog', {
     days,
     color: props.formValues?.color || 'color',
-    query: props.formValues?.jql || '',
+    query: decode(props.formValues?.jql || ''),
     users: props.formValues?.users || [],
   });
 
