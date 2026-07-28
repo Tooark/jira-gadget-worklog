@@ -1,0 +1,115 @@
+name: 🐛 Bug report
+description: Report a defect in the Worklog Chart Gadget.
+title: '[bug] '
+labels: ['bug', 'triage']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report! Please fill out the sections below.
+        For **security vulnerabilities**, do NOT file a public issue — see [`SECURITY.md`](https://github.com/Tooark/jira-gadget-worklog/blob/main/SECURITY.md).
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight
+      options:
+        - label: I have searched existing issues and this is not a duplicate.
+          required: true
+        - label: I am using the latest deployed version of the gadget.
+          required: true
+        - label: This is not a security vulnerability (those go through the private channel).
+          required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: App version
+      description: '`version` in `package.json`, or the version shown in Jira → Manage apps.'
+      placeholder: 'e.g., 4.33.0'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Forge environment
+      options:
+        - production
+        - staging
+        - development (forge tunnel)
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+      placeholder: 'e.g., Chrome 138, Firefox 141, Edge 138'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: gadget-config
+    attributes:
+      label: Gadget configuration
+      description: The values set in the gadget's Edit form. **Redact sensitive project keys, user names, or JQL.**
+      placeholder: |
+        days: 7
+        color: blue
+        users: (2 selected)
+        jql: project = XYZ
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear and concise description of the bug. Screenshots of the chart help a lot.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Add the gadget to a Jira dashboard
+        2. Configure it with '...'
+        3. Click on '...'
+        4. See the wrong output
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste excerpts from the browser DevTools console or `forge logs`. Redact sensitive data.
+      render: shell
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context

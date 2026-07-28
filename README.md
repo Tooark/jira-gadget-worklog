@@ -1,248 +1,252 @@
 # Jira Worklog Chart Gadget
 
-Gadget Forge para exibir gráficos interativos de worklogs no painel do Jira. O gadget agrega e visualiza tempo de trabalho (worklog) por usuário, permitindo que equipes analisem distribuição de horas, naveguem entre níveis de detalhe (drill-down) e exportem gráficos.
+🌍 **Languages:** ![USA Flag](https://flagcdn.com/w20/us.png) **English (this file)** · [![Brazil Flag](https://flagcdn.com/w20/br.png) Português](https://github.com/Tooark/jira-gadget-worklog/blob/main/README.pt-BR.md)
 
-## Principais recursos
+A Forge gadget that displays interactive worklog charts on the Jira dashboard. The gadget aggregates and visualizes work time (worklog) per user, letting teams analyze hour distribution, navigate between detail levels (drill-down), and export charts.
 
-- **Filtros dinâmicos:** últimos `n dias`, `usuários`, `jql adicional` configuráveis via `Edit`.
-- **Agrupamento:** Gráfico interativo com múltiplos níveis de drilldown/back, exportação e visualização tabular.
-- **Navegação interativa:** Por pilha local (drill-down/drill-up) e abertura de issues em nova aba.
+## Key features
 
-**Onde está o código:** veja o diretório [src](src) para frontend/backend.
+- **Dynamic filters:** last `n days`, `users`, and `additional JQL`, configurable via `Edit`.
+- **Grouping:** interactive chart with multiple drill-down/back levels, export, and tabular view.
+- **Interactive navigation:** local stack navigation (drill-down/drill-up) and opening issues in a new tab.
+
+**Where the code lives:** see the [src](src) directory for frontend/backend.
 
 ---
 
-## Pré-requisitos
+## Prerequisites
 
-- **Node.js** — versão LTS 20.x, 22.x ou 24.x  
-  Verifique com `node --version`. Caso precise instalar, use [nvm](https://github.com/nvm-sh/nvm) (macOS/Linux) ou o instalador oficial em [nodejs.org](https://nodejs.org).
-- **Forge CLI** — instalado globalmente:
+- **Node.js** — LTS version 20.x, 22.x, or 24.x  
+  Check with `node --version`. If you need to install it, use [nvm](https://github.com/nvm-sh/nvm) (macOS/Linux) or the official installer at [nodejs.org](https://nodejs.org).
+- **Forge CLI** — installed globally:
 
   ```sh
   npm install -g @forge/cli
-  forge --version   # confirma a instalação
+  forge --version   # confirms the installation
   ```
 
-- **Conta Atlassian Cloud** com um site de desenvolvimento contendo o Jira.  
-  Crie gratuitamente em [go.atlassian.com/cloud-dev](https://go.atlassian.com/cloud-dev) caso ainda não tenha.
+- **Atlassian Cloud account** with a development site containing Jira.  
+  Create one for free at [go.atlassian.com/cloud-dev](https://go.atlassian.com/cloud-dev) if you don't have one yet.
 
 ---
 
-## Configuração do App Forge
+## Forge App Setup
 
-Estas etapas são necessárias apenas na **primeira vez** que você configurar o ambiente, seguindo o [guia oficial de primeiros passos do Forge](https://developer.atlassian.com/platform/forge/getting-started/).
+These steps are only needed the **first time** you set up the environment, following the [official Forge getting-started guide](https://developer.atlassian.com/platform/forge/getting-started/).
 
-### 1. Gerar um token de API Atlassian
+### 1. Generate an Atlassian API token
 
-1. Acesse [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens).
-2. Clique em **Create API token with scopes**.
-3. Dê um nome (ex.: `forge-api-token`), defina a validade e selecione **Forge** como app.
-4. Confirme os escopos recomendados e clique em **Create token**.
-5. **Copie** o token gerado.
+1. Go to [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens).
+2. Click **Create API token with scopes**.
+3. Give it a name (e.g., `forge-api-token`), set the expiry, and select **Forge** as the app.
+4. Confirm the recommended scopes and click **Create token**.
+5. **Copy** the generated token.
 
-### 2. Autenticar na Forge CLI
+### 2. Authenticate with the Forge CLI
 
 ```sh
 forge login
-# informe o e-mail da sua conta Atlassian
-# cole o token de API quando solicitado
+# enter your Atlassian account email
+# paste the API token when prompted
 ```
 
-> Em ambientes de CI/CD sem keychain, use variáveis de ambiente:
+> In CI/CD environments without a keychain, use environment variables:
 >
 > ```sh
-> export FORGE_EMAIL=seu-email@empresa.com
-> export FORGE_API_TOKEN=seu-token
+> export FORGE_EMAIL=your-email@company.com
+> export FORGE_API_TOKEN=your-token
 > ```
 
-### 3. Registrar o app (somente novos forks/clones)
+### 3. Register the app (new forks/clones only)
 
-Se você clonou este repositório e quer registrar um **novo** app no seu ecossistema Atlassian, execute:
+If you cloned this repository and want to register a **new** app in your Atlassian ecosystem, run:
 
 ```sh
 forge register
 ```
 
-Isso atualizará o `app.id` em [manifest.yml](manifest.yml) com o ID do app criado na sua conta.  
-Caso esteja apenas contribuindo para o app existente (`a546d3b1-9757-447c-8403-6513899d61cb`), pule esta etapa.
+This updates the `app.id` in [manifest.yml](manifest.yml) with the ID of the app created in your account.  
+If you are just contributing to the existing app (`a546d3b1-9757-447c-8403-6513899d61cb`), skip this step.
 
-### 4. Instalar o app no site Jira
+### 4. Install the app on the Jira site
 
-Após o primeiro deploy (veja a seção abaixo), instale o app no seu site:
+After the first deploy (see the section below), install the app on your site:
 
 ```sh
 forge install
-# selecione o produto: Jira
-# informe a URL do site (ex.: https://meu-site.atlassian.net)
+# select the product: Jira
+# enter the site URL (e.g., https://my-site.atlassian.net)
 ```
 
 ---
 
-## Instalação
+## Installation
 
-Clone o repositório e instale as dependências de todos os workspaces:
+Clone the repository and install the dependencies for all workspaces:
 
 ```sh
-git clone https://github.com/Tooark/tooark-gadget-worklog.git
-cd tooark-gadget-worklog
+git clone https://github.com/Tooark/jira-gadget-worklog.git
+cd jira-gadget-worklog
 npm install
 ```
 
 ---
 
-## Scripts disponíveis
+## Available scripts
 
-Execute no diretório raiz do projeto:
+Run from the project root:
 
-| Script | Descrição |
-|---|---|
-| `npm run build` | Compila o frontend (Vite) gerando `src/frontend/dist` |
-| `npm run clean` | Remove o diretório `dist` do frontend |
-| `npm test` | Executa os testes do frontend com cobertura (modo CI) |
-| `npm run lint` | Lint ESLint + build + lint Forge |
-| `npm run lint:fix` | Lint com correção automática |
-| `npm run lint:tsc` | Checagem de tipos TypeScript sem emit |
-| `npm run lint:forge` | Valida o `manifest.yml` com `forge lint` |
-| `npm run login` | Autenticação na Forge CLI |
-| `npm run deploy` | Build + deploy + upgrade na env padrão (development) |
-| `npm run deploy-hml` | Build + deploy + upgrade no ambiente **staging** |
-| `npm run deploy-prd` | Build + deploy + upgrade no ambiente **production** |
-| `npm run deploy-test` | Build + testes + deploy + upgrade (pipeline completo) |
+| Script                | Description                                                |
+| --------------------- | ---------------------------------------------------------- |
+| `npm run build`       | Builds the frontend (Vite), generating `src/frontend/dist` |
+| `npm run clean`       | Removes the frontend `dist` directory                      |
+| `npm test`            | Runs frontend tests with coverage (CI mode)                |
+| `npm run lint`        | ESLint + build + Forge lint                                |
+| `npm run lint:fix`    | Lint with auto-fix                                         |
+| `npm run lint:tsc`    | TypeScript type-checking without emit                      |
+| `npm run lint:forge`  | Validates `manifest.yml` with `forge lint`                 |
+| `npm run login`       | Forge CLI authentication                                   |
+| `npm run deploy`      | Build + deploy + upgrade on the default env (development)  |
+| `npm run deploy-hml`  | Build + deploy + upgrade on the **staging** environment    |
+| `npm run deploy-prd`  | Build + deploy + upgrade on the **production** environment |
+| `npm run deploy-test` | Build + tests + deploy + upgrade (full pipeline)           |
 
 ---
 
-## Deploy por ambiente
+## Deploying per environment
 
-O projeto mantém três ambientes Forge independentes:
+The project maintains three independent Forge environments:
 
 ```sh
-# desenvolvimento (padrão)
+# development (default)
 npm run deploy
 
-# homologação
+# staging
 npm run deploy-hml
 
-# produção
+# production
 npm run deploy-prd
 
-# pipeline completo: build → testes → deploy → upgrade
+# full pipeline: build → tests → deploy → upgrade
 npm run deploy-test
 ```
 
-Na primeira instalação em um ambiente novo, use `forge install` (ou `forge install -e staging` / `forge install -e production`) após o deploy para associar o app ao site Jira.
+On the first installation in a new environment, use `forge install` (or `forge install -e staging` / `forge install -e production`) after the deploy to associate the app with the Jira site.
 
 ---
 
-## Desenvolvimento local
+## Local development
 
-Para desenvolver com hot-reload usando o túnel Forge:
+To develop with hot-reload using the Forge tunnel:
 
 ```sh
-# em um terminal — inicia o túnel (conecta a função backend local ao Jira Cloud)
+# in one terminal — starts the tunnel (connects the local backend function to Jira Cloud)
 npx forge tunnel
 
-# opcional — em outro terminal, inicia o frontend em modo watch
+# optional — in another terminal, starts the frontend in watch mode
 cd src/frontend
 npm start
 ```
 
-Para rodar apenas os testes do frontend em modo interativo:
+To run only the frontend tests interactively:
 
 ```sh
 cd src/frontend
-npm test        # modo watch
-npm run test:ci # CI com cobertura
+npm test        # watch mode
+npm run test:ci # CI with coverage
 ```
 
 ---
 
-## Implementação — componentes principais
+## Implementation — main components
 
-- **Edit** ([src/frontend/src/edit/Edit.tsx](src/frontend/src/edit/Edit.tsx)): formulário de configuração do gadget.
-  - Campos principais:
-    - `days` — número de dias (padrão 7).
-    - `color` — paleta/cor do gráfico (ex.: `color`, `blue`, `gray`, ...).
-    - `users` — seleção múltipla de usuários (obtida via `getUsers` no backend).
-    - `jql` — JQL adicional aplicado antes da agregação.
-  - Comportamento: usa `useForgeInvoke('getUsers')` para popular o seletor, mantém `props.formValues` e chama `props.view.submit(...)` para salvar/fechar.
+- **Edit** ([src/frontend/src/edit/Edit.tsx](src/frontend/src/edit/Edit.tsx)): gadget configuration form.
+  - Main fields:
+    - `days` — number of days (default 7).
+    - `color` — chart palette/color (e.g., `color`, `blue`, `gray`, ...).
+    - `users` — multi-select of users (fetched via `getUsers` on the backend).
+    - `jql` — additional JQL applied before aggregation.
+  - Behavior: uses `useForgeInvoke('getUsers')` to populate the selector, keeps `props.formValues`, and calls `props.view.submit(...)` to save/close.
 
-- **View** ([src/frontend/src/view/View.tsx](src/frontend/src/view/View.tsx)): renderiza o gráfico usando `echarts-for-react`.
-  - Obtém dados do backend usando `useForgeInvoke('getWorklog', { days, color, query, users })`.
-  - Mantém uma pilha `path` para drilldown (root = []).
-  - Ao clicar numa barra/segmento:
-    - se o nó tem `url`, abre a issue com `router.open(url)`;
-    - se o nó tem `children`, adiciona o nó à pilha (`setPath([...])`) para descer.
-  - Título dinâmico com total ou contexto do nível atual; tooltips customizados com escape de HTML e formatação `value + 'h'`.
-  - Toolbox do chart inclui botão `Voltar`, `Exportar Gráfico`, `Visualizar Dados` (gera tabela HTML), zoom e alternância de tipo (`line`/`bar`).
-  - O chart registra handlers `on('click', ...)`/`off('click')` diretamente no objeto retornado por `echarts`.
+- **View** ([src/frontend/src/view/View.tsx](src/frontend/src/view/View.tsx)): renders the chart using `echarts-for-react`.
+  - Fetches data from the backend via `useForgeInvoke('getWorklog', { days, color, query, users })`.
+  - Keeps a `path` stack for drill-down (root = []).
+  - When clicking a bar/segment:
+    - if the node has a `url`, opens the issue with `router.open(url)`;
+    - if the node has `children`, pushes the node onto the stack (`setPath([...])`) to go down a level.
+  - Dynamic title with the total or the current level's context; custom tooltips with HTML escaping and `value + 'h'` formatting.
+  - The chart toolbox includes a `Back` button, `Export Chart`, `View Data` (generates an HTML table), zoom, and chart-type toggle (`line`/`bar`).
+  - The chart registers `on('click', ...)`/`off('click')` handlers directly on the object returned by `echarts`.
 
-## Como os dados são formatados
+## How data is formatted
 
-- Cada nó retornado pelo backend é um `TreeNode` com pelo menos: `name`, `value`, `color?`, `summary?`, `url?`, `children?`.
-- Os valores são arredondados (uma casa decimal) antes da exibição; cores são aplicadas por `itemStyle.color`.
+- Each node returned by the backend is a `TreeNode` with at least: `name`, `value`, `color?`, `summary?`, `url?`, `children?`.
+- Values are rounded (one decimal place) before display; colors are applied via `itemStyle.color`.
 
 ---
 
-## Exemplos do gadget
+## Gadget examples
 
-#### Parâmetro de cor (paleta):
+### Color parameter (palette)
 
-| **Colorido**                                                   | **Azul**                                                  |
+| **Colorful**                                                   | **Blue**                                                  |
 | -------------------------------------------------------------- | --------------------------------------------------------- |
-| <img src="media/gadget-color.svg" alt="Colorido" width="600"/> | <img src="media/gadget-blue.svg" alt="Azul" width="600"/> |
+| <img src="media/gadget-color.svg" alt="Colorful" width="600"/> | <img src="media/gadget-blue.svg" alt="Blue" width="600"/> |
 
-| **Cinza**                                                  | **Laranja**                                                     |
-| ---------------------------------------------------------- | --------------------------------------------------------------- |
-| <img src="media/gadget-gray.svg" alt="Cinza" width="600"/> | <img src="media/gadget-orange.svg" alt="Laranja" width="600 "/> |
+| **Gray**                                                  | **Orange**                                                     |
+| --------------------------------------------------------- | -------------------------------------------------------------- |
+| <img src="media/gadget-gray.svg" alt="Gray" width="600"/> | <img src="media/gadget-orange.svg" alt="Orange" width="600 "/> |
 
-| **Verde**                                                   | **Vermelho**                                                 |
-| ----------------------------------------------------------- | ------------------------------------------------------------ |
-| <img src="media/gadget-green.svg" alt="Verde" width="600"/> | <img src="media/gadget-red.svg" alt="Vermelho" width="600"/> |
+| **Green**                                                   | **Red**                                                 |
+| ----------------------------------------------------------- | ------------------------------------------------------- |
+| <img src="media/gadget-green.svg" alt="Green" width="600"/> | <img src="media/gadget-red.svg" alt="Red" width="600"/> |
 
-#### Visões de resumo e drilldown:
+### Summary and drill-down views
 
-<img src="media/gadget-total-hover.svg" alt="Resumo" width="600"/>
-<img src="media/gadget-total-date.svg" alt="Drilldown por data" width="600"/>
-<img src="media/gadget-total-user.svg" alt="Drilldown por usuário" width="600"/>
+<img src="media/gadget-total-hover.svg" alt="Summary" width="600"/>
+<img src="media/gadget-total-date.svg" alt="Drill-down by date" width="600"/>
+<img src="media/gadget-total-user.svg" alt="Drill-down by user" width="600"/>
 
-#### Variações de cor — opções disponíveis no campo `Cor do Gráfico` em `Edit`:
+### Color variations — options available in the `Chart Color` field in `Edit`
 
-| Valor | Descrição |
-|---|---|
-| `color` | Colorido (paleta padrão) |
-| `blue` | Azul |
-| `gray` | Cinza |
-| `orange` | Laranja |
-| `green` | Verde |
-| `red` | Vermelho |
+| Value    | Description                |
+| -------- | -------------------------- |
+| `color`  | Colorful (default palette) |
+| `blue`   | Blue                       |
+| `gray`   | Gray                       |
+| `orange` | Orange                     |
+| `green`  | Green                      |
+| `red`    | Red                        |
 
-#### Drilldown interativo:
+### Interactive drill-down
 
-1. O `View` inicia no nível raiz (agregação por usuário/projeto/período).
-2. Clique em uma barra/segmento com `children` → desce um nível (drill-down).
-3. Clique em um nó com `url` → abre a issue no Jira via `router.open(url)`.
-4. Use o botão **Voltar** na toolbox do gráfico para subir um nível (drill-up).
-
----
-
-## Contribuição
-
-- Abra uma issue para sugerir filtros adicionais ou melhorias de UX: [Issues](https://github.com/Tooark/tooark-gadget-worklog/issues).
-- Pull requests são bem-vindos; mantenha testes e atualize a documentação quando necessário.
+1. The `View` starts at the root level (aggregation by user/project/period).
+2. Click a bar/segment with `children` → goes down a level (drill-down).
+3. Click a node with a `url` → opens the issue in Jira via `router.open(url)`.
+4. Use the **Back** button in the chart toolbox to go up a level (drill-up).
 
 ---
 
-## Licenças de terceiros
+## Contributing
 
-Este projeto inclui dependências de terceiros redistribuídas no bundle do frontend. Cópias das licenças estão em `LICENSES/`.
+- Read the [contribution guide](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md).
+- Open an issue to suggest additional filters or UX improvements: [Issues](https://github.com/Tooark/jira-gadget-worklog/issues).
+- Pull requests are welcome; keep tests passing and update the documentation when needed.
+- Need help? See [SUPPORT.md](SUPPORT.md).
+
+---
+
+## Third-party licenses
+
+This project includes third-party dependencies redistributed in the frontend bundle. Copies of the licenses are in `LICENSES/`.
 
 - **ECharts** — Apache License 2.0
   - [`LICENSES/echarts-LICENSE.txt`](LICENSES/echarts-LICENSE.txt)
   - [`LICENSES/echarts-NOTICE.txt`](LICENSES/echarts-NOTICE.txt)
-  - Fonte oficial: https://echarts.apache.org/en/js/vendors/echarts/LICENSE
+  - Official source: <https://echarts.apache.org/en/js/vendors/echarts/LICENSE>
 
-> Se você gerar um bundle com o código do ECharts, inclua os arquivos acima na distribuição. A inclusão do `NOTICE` pode ser exigida pela seção 4(d) da Apache License 2.0.
+> If you generate a bundle containing ECharts code, include the files above in the distribution. Including the `NOTICE` may be required by section 4(d) of the Apache License 2.0.
 
 ## License
 
-Apache License 2.0 — consulte o arquivo [LICENSE](LICENSE) para o texto completo.
+Apache License 2.0 — see the [LICENSE](LICENSE) file for the full text.

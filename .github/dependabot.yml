@@ -1,33 +1,158 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+# ==============================================================================
+# Worklog Chart Gadget — Dependabot configuration
+# ==============================================================================
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Policy:
+#   - Security updates: always accepted (opened immediately by Dependabot).
+#   - Patch/minor updates: grouped weekly to reduce PR noise.
+#   - Major updates: opened individually for careful review.
+#
+# The repo is a single npm workspace (root package-lock.json), so one "npm"
+# entry at "/" covers the root and the src/backend + src/frontend manifests.
+# ==============================================================================
 
 version: 2
+
 updates:
+  # --------------------------------------------------------------------------
+  # JavaScript / TypeScript (npm workspaces)
+  # --------------------------------------------------------------------------
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
-      interval: 'daily'
+      interval: 'weekly'
+      day: 'monday'
+      time: '07:00'
+      timezone: 'America/Sao_Paulo'
+    open-pull-requests-limit: 5
+    labels:
+      - 'dependencies'
+    commit-message:
+      prefix: 'build'
+      prefix-development: 'chore'
+      include: 'scope'
     groups:
+      # Atlassian UI kit (already released in lockstep upstream).
       atlaskit:
         patterns:
           - '@atlaskit/*'
-      commitlint:
+        update-types:
+          - 'minor'
+          - 'patch'
+      # Forge platform (bridge, CLI helpers).
+      forge:
         patterns:
-          - '@commitlint/*'
-      eslint:
+          - '@forge/*'
+        update-types:
+          - 'minor'
+          - 'patch'
+      # React runtime + type definitions.
+      react:
         patterns:
+          - 'react'
+          - 'react-dom'
+          - '@types/react'
+          - '@types/react-dom'
+        update-types:
+          - 'minor'
+          - 'patch'
+      # Linting / formatting / commit-convention toolchain.
+      lint-format:
+        patterns:
+          - 'eslint'
+          - 'eslint-*'
           - '@eslint/*'
-      prettier:
-        patterns:
-          - prettier
-          - eslint-plugin-prettier
-      typescript-eslint:
-        patterns:
           - '@typescript-eslint/*'
+          - 'typescript-eslint'
+          - 'prettier'
+          - '@commitlint/*'
+          - 'lint-staged'
+          - 'globals'
+        update-types:
+          - 'minor'
+          - 'patch'
+      # TypeScript + remaining type definitions.
+      typescript:
+        patterns:
+          - 'typescript'
+          - 'ts-node'
+          - '@types/*'
+        update-types:
+          - 'minor'
+          - 'patch'
+      # Testing stack (Jest + Testing Library).
+      testing:
+        patterns:
+          - 'jest'
+          - 'jest-*'
+          - 'ts-jest'
+          - '@testing-library/*'
+          - 'identity-obj-proxy'
+        update-types:
+          - 'minor'
+          - 'patch'
+      # Build tooling (Vite).
+      build-tools:
+        patterns:
+          - 'vite'
+          - '@vitejs/*'
+        update-types:
+          - 'minor'
+          - 'patch'
+      # Everything else, minor/patch, in one PR (e.g. echarts, lodash).
+      other-minor-patch:
+        patterns:
+          - '*'
+        exclude-patterns:
+          - '@atlaskit/*'
+          - '@forge/*'
+          - 'react'
+          - 'react-dom'
+          - 'eslint'
+          - 'eslint-*'
+          - '@eslint/*'
+          - '@typescript-eslint/*'
+          - 'typescript-eslint'
+          - 'prettier'
+          - '@commitlint/*'
+          - 'lint-staged'
+          - 'globals'
+          - 'typescript'
+          - 'ts-node'
+          - '@types/*'
+          - 'jest'
+          - 'jest-*'
+          - 'ts-jest'
+          - '@testing-library/*'
+          - 'identity-obj-proxy'
+          - 'vite'
+          - '@vitejs/*'
+        update-types:
+          - 'minor'
+          - 'patch'
 
+  # --------------------------------------------------------------------------
+  # GitHub Actions (workflow dependencies)
+  # --------------------------------------------------------------------------
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
-      interval: 'daily'
+      interval: 'weekly'
+      day: 'monday'
+      time: '07:00'
+      timezone: 'America/Sao_Paulo'
+    open-pull-requests-limit: 5
+    labels:
+      - 'dependencies'
+      - 'ci'
+    commit-message:
+      prefix: 'ci'
+      include: 'scope'
+    groups:
+      actions-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'

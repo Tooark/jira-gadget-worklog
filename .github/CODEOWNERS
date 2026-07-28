@@ -1,0 +1,39 @@
+# ==============================================================================
+# Worklog Chart Gadget — CODEOWNERS
+# ==============================================================================
+# GitHub uses this file to auto-request reviews from the right owner.
+# Rules are matched top-to-bottom; the LAST matching rule wins per file.
+#
+# NOTE: uses the maintainer's personal handle (@paulosfjunior). Swap to a
+# @Tooark/... team once the org has 2+ reviewers.
+# ==============================================================================
+
+# Global default — anything not matched by a later rule.
+*                                   @paulosfjunior
+
+# Governance, legal and licensing.
+/LICENSE                            @paulosfjunior
+/LICENSES/                          @paulosfjunior
+/CODE_OF_CONDUCT.md                 @paulosfjunior
+/SECURITY.md                        @paulosfjunior
+/SUPPORT.md                         @paulosfjunior
+/CONTRIBUTING.md                    @paulosfjunior
+
+# CI/CD, GitHub and AI IDE configuration (supply-chain / release sensitive).
+/.github/                           @paulosfjunior
+/.github/CODEOWNERS                 @paulosfjunior
+/.claude/                           @paulosfjunior
+
+# Forge app manifest — modules, permissions and scopes (security sensitive:
+# scope changes trigger admin re-consent on every installed site).
+/manifest.yml                       @paulosfjunior
+
+# Build system, workspace manifests and lockfile (supply-chain root).
+/package.json                       @paulosfjunior
+/package-lock.json                  @paulosfjunior
+/eslint.config.mjs                  @paulosfjunior
+/.commitlintrc.json                 @paulosfjunior
+
+# Per-workspace manifests (version bumps drive releases).
+/src/backend/package.json           @paulosfjunior
+/src/frontend/package.json          @paulosfjunior

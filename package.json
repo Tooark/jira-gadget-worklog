@@ -3,7 +3,25 @@
   "version": "4.33.0",
   "description": "Worklog por usuário nos últimos N dias",
   "private": true,
-  "license": "MIT",
+  "license": "Apache-2.0",
+  "sponsor": {
+    "url": "https://github.com/Tooark/jira-gadget-worklog/sponsors"
+  },
+  "author": {
+    "name": "Paulo Sergio de Freitas Junior",
+    "email": "paulo.freitas@tooark.com",
+    "url": "https://paulofreitas.tooark.com"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "jira",
+    "forge",
+    "gadget",
+    "worklog",
+    "graph"
+  ],
   "scripts": {
     "build": "npm run build --workspace=frontend",
     "clean": "npm run clean --workspace=frontend",
