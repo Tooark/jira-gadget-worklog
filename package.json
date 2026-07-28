@@ -32,5 +32,8 @@
   "workspaces": [
     "src/backend",
     "src/frontend"
-  ]
+  ],
+  "overrides": {
+    "brace-expansion": "^5.0.8"
+  }
 }
