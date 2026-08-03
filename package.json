@@ -4,9 +4,16 @@
   "description": "Worklog por usuário nos últimos N dias",
   "private": true,
   "license": "Apache-2.0",
-  "sponsor": {
-    "url": "https://github.com/Tooark/jira-gadget-worklog/sponsors"
-  },
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/paulosfjunior"
+    },
+    {
+      "type": "ko-fi",
+      "url": "https://ko-fi.com/paulosfjunior"
+    }
+  ],
   "author": {
     "name": "Paulo Sergio de Freitas Junior",
     "email": "paulo.freitas@tooark.com",

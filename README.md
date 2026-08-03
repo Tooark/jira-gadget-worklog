@@ -2,6 +2,9 @@
 
 🌍 **Languages:** ![USA Flag](https://flagcdn.com/w20/us.png) **English (this file)** · [![Brazil Flag](https://flagcdn.com/w20/br.png) Português](https://github.com/Tooark/jira-gadget-worklog/blob/main/README.pt-BR.md)
 
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-sponsor-EA4AAA?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/paulosfjunior)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=kofi&logoColor=white)](https://ko-fi.com/paulosfjunior)
+
 A Forge gadget that displays interactive worklog charts on the Jira dashboard. The gadget aggregates and visualizes work time (worklog) per user, letting teams analyze hour distribution, navigate between detail levels (drill-down), and export charts.
 
 ## Key features
@@ -16,7 +19,7 @@ A Forge gadget that displays interactive worklog charts on the Jira dashboard. T
 
 ## Prerequisites
 
-- **Node.js** — LTS version 20.x, 22.x, or 24.x  
+- **Node.js** — LTS version 22.x or 24.x (22 is the minimum required by the test tooling)  
   Check with `node --version`. If you need to install it, use [nvm](https://github.com/nvm-sh/nvm) (macOS/Linux) or the official installer at [nodejs.org](https://nodejs.org).
 - **Forge CLI** — installed globally:
 
@@ -233,6 +236,17 @@ npm run test:ci # CI with coverage
 - Open an issue to suggest additional filters or UX improvements: [Issues](https://github.com/Tooark/jira-gadget-worklog/issues).
 - Pull requests are welcome; keep tests passing and update the documentation when needed.
 - Need help? See [SUPPORT.md](SUPPORT.md).
+
+---
+
+## Supporting the project
+
+If this gadget is useful to you or your team, consider supporting its development:
+
+- 💖 **[GitHub Sponsors](https://github.com/sponsors/paulosfjunior)** — recurring or one-time sponsorship through GitHub.
+- ☕ **[Ko-fi](https://ko-fi.com/paulosfjunior)** — one-off or recurring tips.
+
+You can also support for free by starring ⭐ the repository and sharing the project.
 
 ---
 

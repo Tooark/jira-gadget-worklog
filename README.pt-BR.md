@@ -2,6 +2,9 @@
 
 🌍 **Idiomas:** [![USA Flag](https://flagcdn.com/w20/us.png) English](https://github.com/Tooark/jira-gadget-worklog/blob/main/README.md) · ![Brazil Flag](https://flagcdn.com/w20/br.png) **Português (este arquivo)**
 
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-patrocinar-EA4AAA?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/paulosfjunior)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-apoiar-FF5E5B?logo=kofi&logoColor=white)](https://ko-fi.com/paulosfjunior)
+
 Gadget Forge para exibir gráficos interativos de worklogs no painel do Jira. O gadget agrega e visualiza tempo de trabalho (worklog) por usuário, permitindo que equipes analisem distribuição de horas, naveguem entre níveis de detalhe (drill-down) e exportem gráficos.
 
 ## Principais recursos
@@ -16,7 +19,7 @@ Gadget Forge para exibir gráficos interativos de worklogs no painel do Jira. O 
 
 ## Pré-requisitos
 
-- **Node.js** — versão LTS 20.x, 22.x ou 24.x  
+- **Node.js** — versão LTS 22.x ou 24.x (22 é o mínimo exigido pelas ferramentas de teste)  
   Verifique com `node --version`. Caso precise instalar, use [nvm](https://github.com/nvm-sh/nvm) (macOS/Linux) ou o instalador oficial em [nodejs.org](https://nodejs.org).
 - **Forge CLI** — instalado globalmente:
 
@@ -233,6 +236,17 @@ npm run test:ci # CI com cobertura
 - Abra uma issue para sugerir filtros adicionais ou melhorias de UX: [Issues](https://github.com/Tooark/jira-gadget-worklog/issues).
 - Pull requests são bem-vindos; mantenha testes e atualize a documentação quando necessário.
 - Precisa de ajuda? Veja o [SUPPORT.md](SUPPORT.md).
+
+---
+
+## Apoie o projeto
+
+Se este gadget é útil para você ou sua equipe, considere apoiar o desenvolvimento:
+
+- 💖 **[GitHub Sponsors](https://github.com/sponsors/paulosfjunior)** — patrocínio recorrente ou único pelo GitHub.
+- ☕ **[Ko-fi](https://ko-fi.com/paulosfjunior)** — contribuições pontuais ou recorrentes.
+
+Você também pode apoiar gratuitamente deixando uma estrela ⭐ no repositório e divulgando o projeto.
 
 ---
 
