@@ -1,2 +1,13 @@
 # Ensure shell hooks use LF to avoid CRLF issues on Windows
 .githooks/* text eol=lf
+
+# Normaliza line endings para LF no repositório e no checkout.
+# Evita erros prettier/prettier ("Delete ␍") em ambientes Windows.
+* text=auto eol=lf
+
+# Imagens e binários não devem ser normalizados.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

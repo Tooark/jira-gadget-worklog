@@ -9,3 +9,11 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+// `process.env.NODE_ENV` é substituído pelo Vite no build e fornecido pelo
+// Jest nos testes; declaração mínima para não depender de @types/node.
+declare const process: {
+  env: {
+    NODE_ENV?: string;
+  };
+};

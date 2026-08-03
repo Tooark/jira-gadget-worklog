@@ -45,7 +45,7 @@ This is an **npm workspaces** project. The workspaces live under `src/`:
 
 ## Development workflow
 
-**Prerequisites:** Node.js 20.x (see `.nvmrc`; 22.x and 24.x also work) and the
+**Prerequisites:** Node.js 22.x (see `.nvmrc`; 24.x also works) and the
 Forge CLI. See the [README](README.md) for the full first-time Forge setup
 (API token, `forge login`, `forge register`, `forge install`).
 

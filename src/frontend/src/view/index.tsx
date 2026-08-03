@@ -9,7 +9,5 @@ export default function ViewContext() {
     return <Spinner label="Loading" />;
   }
 
-  return (
-    <View formValues={context.extension.gadgetConfiguration} />
-  );
+  return <View formValues={context.extension.gadgetConfiguration} />;
 }

@@ -12,13 +12,18 @@ export function useForgeInvoke<T>(
   // Serialize o payload para que literais de objeto (que são recriados em
   // cada renderização) não acionem o efeito desnecessariamente. Mantemos a
   // string serializada nas dependências em vez do objeto bruto.
-  const serializedPayload = invokePayload ? JSON.stringify(invokePayload) : undefined;
+  const serializedPayload = invokePayload
+    ? JSON.stringify(invokePayload)
+    : undefined;
 
   useEffect(() => {
     let mounted = true;
 
     // Evita redefinir o estado se desmontado (segurança para montagens duplas / StrictMode)
-    invoke<T>(functionKey, invokePayload)
+    invoke<T>(
+      functionKey,
+      serializedPayload ? JSON.parse(serializedPayload) : undefined,
+    )
       .then((res) => {
         if (mounted) {
           setData(res);

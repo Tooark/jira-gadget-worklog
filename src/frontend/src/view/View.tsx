@@ -2,8 +2,8 @@ import { router } from '@forge/bridge';
 import ReactECharts from 'echarts-for-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useForgeInvoke } from '../hooks';
 import { decode } from '../helpers';
+import { useForgeInvoke } from '../hooks';
 import type { TreeNode, ViewProps } from '../types';
 
 // Tipos locais mínimos para evitar dependência direta das exports dos tipos do echarts

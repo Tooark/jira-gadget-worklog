@@ -21,11 +21,14 @@ it.each(['Salvar', 'Cancelar'])('renderiza o botao %p', (text) => {
   expect(screen.getByRole('button', { name: text })).toBeInTheDocument();
 });
 
-it.each(['Dias', 'Cor do Gráfico', 'Usuários', 'JQL Adicional'])('renderiza o label %p', (text) => {
-  const props = makeProps();
-  render(<Edit {...props} />);
-  expect(screen.getByText(text)).toBeInTheDocument();
-});
+it.each(['Dias', 'Cor do Gráfico', 'Usuários', 'JQL Adicional'])(
+  'renderiza o label %p',
+  (text) => {
+    const props = makeProps();
+    render(<Edit {...props} />);
+    expect(screen.getByText(text)).toBeInTheDocument();
+  },
+);
 
 it('submete o formulario ao salvar', () => {
   const props = makeProps();

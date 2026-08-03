@@ -8,8 +8,9 @@ export function useForgeContext() {
   const [context, setContext] = useState<FullContext | undefined>();
 
   useEffect(() => {
-    view.getContext()
-      .then(x => {
+    view
+      .getContext()
+      .then((x) => {
         setContext(x);
       })
       .catch(log.error);

@@ -1,20 +1,22 @@
 import { ButtonGroup } from '@atlaskit/button';
 import Button from '@atlaskit/button/new';
 import Form, { Field } from '@atlaskit/form';
-import TextField from '@atlaskit/textfield';
 import Select from '@atlaskit/select';
+import TextField from '@atlaskit/textfield';
 
-import type { FormValues, EditProps } from '../types';
-import { useForgeInvoke } from '../hooks';
 import { decode } from '../helpers';
+import { useForgeInvoke } from '../hooks';
+import type { EditProps, FormValues } from '../types';
+
+type SelectOption = { label: string; value: string };
+type ColorOption = { label: string; value: FormValues['color'] };
 
 export default function Edit(props: EditProps) {
   // Busca a lista de usuários (backend deve expor 'getUsers')
-  const users =
-    useForgeInvoke<Array<{ label: string; value: string }>>('getUsers');
+  const users = useForgeInvoke<SelectOption[]>('getUsers');
 
   // Opções de cores para o gráfico
-  const colorOptions: Array<{ label: string; value: string }> = [
+  const colorOptions: ColorOption[] = [
     { label: 'Colorido', value: 'color' },
     { label: 'Azul', value: 'blue' },
     { label: 'Cinza', value: 'gray' },
@@ -32,15 +34,18 @@ export default function Edit(props: EditProps) {
   };
 
   return (
-    <div style={{ height: '100%', width: 'calc(100% - 20px)', margin: 0, padding: '10px' }}>
+    <div
+      style={{
+        height: '100%',
+        width: 'calc(100% - 20px)',
+        margin: 0,
+        padding: '10px',
+      }}
+    >
       <Form<FormValues> onSubmit={(event) => props.view.submit(event)}>
         {({ formProps, submitting }) => (
           <form {...formProps}>
-            <Field
-              name="days"
-              label="Dias"
-              defaultValue={formValues.days}
-            >
+            <Field name="days" label="Dias" defaultValue={formValues.days}>
               {({ fieldProps }) => (
                 <TextField {...fieldProps} type="number" placeholder="7" />
               )}
@@ -61,8 +66,8 @@ export default function Edit(props: EditProps) {
                     colorOptions.find((o) => o.value === fieldProps.value) ||
                     null
                   }
-                  onChange={(selected: any) =>
-                    fieldProps.onChange(selected ? selected.value : '')
+                  onChange={(selected: ColorOption | null) =>
+                    fieldProps.onChange(selected ? selected.value : 'color')
                   }
                 />
               )}
@@ -82,9 +87,9 @@ export default function Edit(props: EditProps) {
                   value={(users || []).filter((o) =>
                     fieldProps.value?.includes?.(o.value),
                   )}
-                  onChange={(selected: any) =>
+                  onChange={(selected: readonly SelectOption[] | null) =>
                     fieldProps.onChange(
-                      selected ? selected.map((s: any) => s.value) : [],
+                      selected ? selected.map((s) => s.value) : [],
                     )
                   }
                   menuShouldBlockScroll={false}

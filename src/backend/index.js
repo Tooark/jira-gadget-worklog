@@ -1,5 +1,5 @@
-import Resolver from '@forge/resolver';
 import api, { route } from '@forge/api';
+import Resolver from '@forge/resolver';
 import { DateTime } from 'luxon';
 
 // Tipagens centralizadas (definidas em types.d.ts)
@@ -31,19 +31,19 @@ const getJiraBaseUrl = async () => {
     const url = route`/rest/api/3/serverInfo`;
     const response = await api.asApp().requestJira(url, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     });
     /** @type {{ baseUrl?: string }} */
     const json = await response.json();
     jiraBaseUrlCache = json?.baseUrl || null;
     return jiraBaseUrlCache;
   } catch (e) {
-    console.error("getJiraBaseUrl error:", e);
+    console.error('getJiraBaseUrl error:', e);
     return null;
   }
 };
 
-/** 
+/**
  * @param {Record<string, TreeNode>} data
  * @param {string[]} color
  * @returns {OutputNode[]}
@@ -64,7 +64,7 @@ const createData = (data, color) => {
       color: color[result.length % color.length],
       name: key,
       value: element.value,
-      children: /** @type {OutputNode[]} */([]) // evita never[]
+      children: /** @type {OutputNode[]} */ ([]), // evita never[]
     };
 
     if (element.summary) {
@@ -79,7 +79,9 @@ const createData = (data, color) => {
     const childMap = element.days || element.issues;
     if (childMap) {
       // Ordena as chaves e recria um objeto com a mesma estrutura
-      const sortedKeys = Object.keys(childMap).sort((a, b) => a.localeCompare(b));
+      const sortedKeys = Object.keys(childMap).sort((a, b) =>
+        a.localeCompare(b),
+      );
 
       /** @type {{ [k: string]: TreeNode }} */
       const ordered = {};
@@ -102,7 +104,12 @@ const createData = (data, color) => {
  * @param {number} maxResults
  * @param {Array<IssueItem>} accumulatedIssues
  */
-const getDataIssues = async (jql = '', nextPageToken = '', maxResults = 100, accumulatedIssues = []) => {
+const getDataIssues = async (
+  jql = '',
+  nextPageToken = '',
+  maxResults = 100,
+  accumulatedIssues = [],
+) => {
   // Monta o corpo da requisição
   /** @type {{jql:string, nextPageToken:string, maxResults:number, expand:string, fields:string[]}} */
   const body = {
@@ -110,19 +117,17 @@ const getDataIssues = async (jql = '', nextPageToken = '', maxResults = 100, acc
     nextPageToken,
     maxResults,
     expand: 'names',
-    fields: ['worklog', 'summary']
+    fields: ['worklog', 'summary'],
   };
 
   try {
     // Realiza a requisição para a API de busca do Jira
     const url = route`/rest/api/3/search/jql`;
-    const response = await api
-      .asApp()
-      .requestJira(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
+    const response = await api.asApp().requestJira(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
 
     // Converte a resposta para JSON
     /** @type {IssueSearchResult} */
@@ -137,13 +142,18 @@ const getDataIssues = async (jql = '', nextPageToken = '', maxResults = 100, acc
     // Verifica se há mais páginas para buscar
     if (json.isLast === false && json.nextPageToken) {
       // Recursivamente busca as próximas páginas
-      return await getDataIssues(jql, json.nextPageToken, maxResults, accumulatedIssues);
+      return await getDataIssues(
+        jql,
+        json.nextPageToken,
+        maxResults,
+        accumulatedIssues,
+      );
     }
 
     // Retorna todas as issues acumuladas
     return accumulatedIssues;
   } catch (error) {
-    console.error("getDataIssues error: ", error);
+    console.error('getDataIssues error: ', error);
     throw error;
   }
 };
@@ -154,16 +164,19 @@ const getDataIssues = async (jql = '', nextPageToken = '', maxResults = 100, acc
  * @param {number} maxResults
  * @param {Array<WorklogsItems>} accumulatedWorklogs
  */
-const getDataWorklogs = async (issueId, startAt = 0, maxResults = 100, accumulatedWorklogs = []) => {
+const getDataWorklogs = async (
+  issueId,
+  startAt = 0,
+  maxResults = 100,
+  accumulatedWorklogs = [],
+) => {
   try {
     // Realiza a requisição para a API de busca do Jira
     const url = route`/rest/api/3/issue/${issueId}/worklog?startAt=${startAt}&maxResults=${maxResults}`;
-    const response = await api
-      .asApp()
-      .requestJira(url, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
+    const response = await api.asApp().requestJira(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
 
     // Converte a resposta para JSON
     /** @type {WorklogItem} */
@@ -184,13 +197,18 @@ const getDataWorklogs = async (issueId, startAt = 0, maxResults = 100, accumulat
     // Verifica se há mais páginas para buscar
     if (totalResp > startAtResp + maxResultsResp) {
       // Recursivamente busca as próximas páginas
-      return await getDataWorklogs(issueId, startAtResp + maxResultsResp, maxResultsResp, accumulatedWorklogs);
+      return await getDataWorklogs(
+        issueId,
+        startAtResp + maxResultsResp,
+        maxResultsResp,
+        accumulatedWorklogs,
+      );
     }
 
     // Retorna todas as issues acumuladas
     return accumulatedWorklogs;
   } catch (error) {
-    console.error("getDataIssues error: ", error);
+    console.error('getDataIssues error: ', error);
     throw error;
   }
 };
@@ -200,16 +218,18 @@ const getDataWorklogs = async (issueId, startAt = 0, maxResults = 100, accumulat
  * @param {number} maxResults
  * @param {Array<UserItem>} accumulatedUsers
  */
-const getDataUsers = async (startAt = 0, maxResults = 1000, accumulatedUsers = []) => {
+const getDataUsers = async (
+  startAt = 0,
+  maxResults = 1000,
+  accumulatedUsers = [],
+) => {
   try {
     // Realiza a requisição para a API de busca de usuários do Jira
     const url = route`/rest/api/3/users/search?startAt=${startAt}&maxResults=${maxResults}`;
-    const response = await api
-      .asApp()
-      .requestJira(url, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
+    const response = await api.asApp().requestJira(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
 
     // Converte a resposta para JSON e trata diferentes formatos
     const json = await response.json();
@@ -220,11 +240,9 @@ const getDataUsers = async (startAt = 0, maxResults = 1000, accumulatedUsers = [
     /** @type {Array<UserItem>} */
     const iterable = Array.isArray(json)
       ? json
-      : (
-        json && Array.isArray(json.values)
-          ? json.values
-          : null
-      );
+      : json && Array.isArray(json.values)
+        ? json.values
+        : null;
 
     // Retorna o acumulado atual para evitar lançar erro na UI
     if (!iterable) {
@@ -234,7 +252,11 @@ const getDataUsers = async (startAt = 0, maxResults = 1000, accumulatedUsers = [
     // Filtra apenas usuários ativos com accountType 'atlassian'
     for (const /** @type {UserItem} */ element of iterable) {
       // Se o elemento não for válido, pula para o próximo
-      if (element && element.accountType === 'atlassian' && element.active === true) {
+      if (
+        element &&
+        element.accountType === 'atlassian' &&
+        element.active === true
+      ) {
         // Cria o objeto do usuário
         /** @type {UserItem} */
         const user = {
@@ -243,7 +265,7 @@ const getDataUsers = async (startAt = 0, maxResults = 1000, accumulatedUsers = [
           active: element.active,
           displayName: element.displayName,
           timeZone: element.timeZone,
-          avatarUrls: element.avatarUrls
+          avatarUrls: element.avatarUrls,
         };
 
         users.push(user);
@@ -254,12 +276,16 @@ const getDataUsers = async (startAt = 0, maxResults = 1000, accumulatedUsers = [
 
     // Verifica se há mais usuários para buscar
     if (json.length === 1000) {
-      return await getDataUsers(startAt + maxResults, maxResults, accumulatedUsers);
+      return await getDataUsers(
+        startAt + maxResults,
+        maxResults,
+        accumulatedUsers,
+      );
     }
 
     return accumulatedUsers;
   } catch (error) {
-    console.error("getDataUsers error: ", error);
+    console.error('getDataUsers error: ', error);
     throw error;
   }
 };
@@ -270,13 +296,19 @@ const getDataUsers = async (startAt = 0, maxResults = 1000, accumulatedUsers = [
  */
 resolver.define('getWorklog', async ({ payload }) => {
   /** @type {WorklogPayload} */
-  const payloadAny = payload ?? { days: 7, color: 'color', query: '', users: [] };
+  const payloadAny = payload ?? {
+    days: 7,
+    color: 'color',
+    query: '',
+    users: [],
+  };
 
   // Valida e ajusta os parâmetros
   /** @type {number} */
   const days = payloadAny.days < 0 ? 7 : payloadAny.days;
   /** @type {Array<string>|null} */
-  const users = payloadAny.users && payloadAny.users.length > 0 ? payloadAny.users : [];
+  const users =
+    payloadAny.users && payloadAny.users.length > 0 ? payloadAny.users : [];
   /** @type {string} */
   const jql = payloadAny.query;
 
@@ -287,7 +319,8 @@ resolver.define('getWorklog', async ({ payload }) => {
   /** @type {string} */
   let searchJql = '';
   searchJql += `worklogDate >= startOfDay("-${days}d")`;
-  searchJql += users.length > 0 ? ` AND worklogAuthor in (${users.join(',')})` : '';
+  searchJql +=
+    users.length > 0 ? ` AND worklogAuthor in (${users.join(',')})` : '';
   searchJql += jql ? ` AND ${jql}` : '';
 
   // Retorno da lista de issues
@@ -332,13 +365,16 @@ resolver.define('getWorklog', async ({ payload }) => {
 
       // Label e metadados do issue (para o 3º nível)
       /** @type {string} */
-      const browseKey = (/** @type {{key?: string}} */(issue))?.key || '';
+      const browseKey = /** @type {{key?: string}} */ (issue)?.key || '';
       /** @type {string} */
       const issueKey = browseKey || issueId;
       /** @type {string | undefined} */
       const issueSummary = issue.fields?.summary;
       /** @type {string | undefined} */
-      const issueUrl = (jiraBaseUrl && browseKey) ? `${jiraBaseUrl}/browse/${browseKey}` : undefined;
+      const issueUrl =
+        jiraBaseUrl && browseKey
+          ? `${jiraBaseUrl}/browse/${browseKey}`
+          : undefined;
 
       // Percorre os worklogs da issue
       for (const /** @type {WorklogsItems} */ wl of worklogs) {
@@ -351,14 +387,19 @@ resolver.define('getWorklog', async ({ payload }) => {
         /** @type {string} */
         const time_zone = author?.timeZone || 'America/Sao_Paulo';
         /** @type {DateTime | null} */
-        const started = wl.started ? DateTime.fromISO(wl.started).setZone(time_zone) : null;
+        const started = wl.started
+          ? DateTime.fromISO(wl.started).setZone(time_zone)
+          : null;
         /** @type {string | null} */
         const startedString = started ? started.toISODate() : 'unknown';
         /** @type {string} */
         const dayKey = startedString ? startedString : 'unknown';
 
         // Considera apenas worklogs com autor válido e, se fornecido, dentro da lista de usuários
-        if (display_name && (users.length === 0 || users.includes(account_id))) {
+        if (
+          display_name &&
+          (users.length === 0 || users.includes(account_id))
+        ) {
           // Inicializa o autor no objeto se ainda não existir
           if (!(display_name in authorTimes)) {
             authorTimes[display_name] = { value: 0, days: {} };
@@ -366,7 +407,9 @@ resolver.define('getWorklog', async ({ payload }) => {
 
           // Verifica a data do worklog
           /** @type {DateTime} */
-          const now = DateTime.now().setZone(time_zone).set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
+          const now = DateTime.now()
+            .setZone(time_zone)
+            .set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
           /** @type {DateTime} */
           const analyzeStart = now.minus({ days });
 
@@ -382,7 +425,7 @@ resolver.define('getWorklog', async ({ payload }) => {
               authorTimes[display_name].days[dayKey].issues[issueKey] = {
                 value: 0,
                 summary: issueSummary,
-                url: issueUrl
+                url: issueUrl,
               };
             }
 
@@ -392,7 +435,8 @@ resolver.define('getWorklog', async ({ payload }) => {
 
             authorTimes[display_name].value += hours;
             authorTimes[display_name].days[dayKey].value += hours;
-            authorTimes[display_name].days[dayKey].issues[issueKey].value += hours;
+            authorTimes[display_name].days[dayKey].issues[issueKey].value +=
+              hours;
           }
         }
       }
@@ -400,15 +444,14 @@ resolver.define('getWorklog', async ({ payload }) => {
 
     // Ordena authorTimes por nome (label) em ordem alfabética
     /** @type {Array<[string, {value: number, days: {[day: string]: {value: number, issues: {[issue: string]: {value: number}}}}}]>} */
-    const sortedEntries = Object
-      .entries(authorTimes)
-      .sort((a, b) => a[0].localeCompare(b[0]));
+    const sortedEntries = Object.entries(authorTimes).sort((a, b) =>
+      a[0].localeCompare(b[0]),
+    );
     // Atualiza authorTimes com a ordem correta
-    Object
-      .keys(authorTimes)
-      .forEach(key => delete authorTimes[key]);
-    sortedEntries
-      .forEach(([name, value]) => { authorTimes[name] = value; });
+    Object.keys(authorTimes).forEach((key) => delete authorTimes[key]);
+    sortedEntries.forEach(([name, value]) => {
+      authorTimes[name] = value;
+    });
 
     authorTimes = Object.fromEntries(sortedEntries);
   }
@@ -416,7 +459,7 @@ resolver.define('getWorklog', async ({ payload }) => {
   // Mapa de cores
   /** @type {Record<string, string[]>} */
   const colorMap = {
-    "color": [
+    color: [
       '#fb2c36', // red
       '#ff6900', // orange
       '#fd9a00', // amber
@@ -437,7 +480,7 @@ resolver.define('getWorklog', async ({ payload }) => {
       '#4a5565', // gray
       '#525252', // neutral
     ],
-    "gray": [
+    gray: [
       '#030712', // 950
       '#111827', // 900
       '#1f2937', // 800
@@ -449,7 +492,7 @@ resolver.define('getWorklog', async ({ payload }) => {
       '#e5e7eb', // 200
       '#f3f4f6', // 100
     ],
-    "red": [
+    red: [
       '#450a0a', // 950
       '#7f1d1d', // 900
       '#991b1b', // 800
@@ -461,7 +504,7 @@ resolver.define('getWorklog', async ({ payload }) => {
       '#fecaca', // 200
       '#fee2e2', // 100
     ],
-    "blue": [
+    blue: [
       '#172554', // 950
       '#1e3a8a', // 900
       '#1e40af', // 800
@@ -473,7 +516,7 @@ resolver.define('getWorklog', async ({ payload }) => {
       '#bfdbfe', // 200
       '#dbeafe', // 100
     ],
-    "green": [
+    green: [
       '#052e16', // 950
       '#14532d', // 900
       '#166534', // 800
@@ -485,7 +528,7 @@ resolver.define('getWorklog', async ({ payload }) => {
       '#bbf7d0', // 200
       '#dcfce7', // 100
     ],
-    "orange": [
+    orange: [
       '#431407', // 950
       '#7c2d12', // 900
       '#9a3412', // 800
@@ -526,21 +569,28 @@ resolver.define('getUsers', async () => {
     const users = await getDataUsers();
 
     return users
-      .filter((/** @type {UserItem} */ user) =>
-        user.accountType === 'atlassian' && user.active === true)
+      .filter(
+        (/** @type {UserItem} */ user) =>
+          user.accountType === 'atlassian' && user.active === true,
+      )
       .map((/** @type {UserItem} */ user) => ({
         label: user.displayName,
-        value: user.accountId
+        value: user.accountId,
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
   } catch (error) {
-    console.error("getUsers error:", error);
+    console.error('getUsers error:', error);
     throw error;
   }
 });
 
-
 export const handler = resolver.getDefinitions();
 
 // Exportações nomeadas para permitir testes unitários das funções internas
-export { createData, getDataIssues, getDataWorklogs, getDataUsers, getJiraBaseUrl };
+export {
+  createData,
+  getDataIssues,
+  getDataUsers,
+  getDataWorklogs,
+  getJiraBaseUrl,
+};

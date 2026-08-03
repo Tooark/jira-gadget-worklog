@@ -1,8 +1,8 @@
 export type IconItem = {
-  "16x16": string | null;
-  "24x24": string | null;
-  "32x32": string | null;
-  "48x48": string | null;
+  '16x16': string | null;
+  '24x24': string | null;
+  '32x32': string | null;
+  '48x48': string | null;
 };
 
 export interface UserItem {

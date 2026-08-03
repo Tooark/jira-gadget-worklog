@@ -1,4 +1,4 @@
-import type { FormValues } from "./form";
+import type { FormValues } from './form';
 
 export interface ViewProps {
   formValues: FormValues;

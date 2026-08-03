@@ -35,7 +35,7 @@ export default tseslint.config(
 
     rules: {
       '@typescript-eslint/no-unused-vars': 'error',
-      'no-console': 'error',
+      'no-console': ['error', { allow: ['warn', 'error'] }],
       'no-debugger': 'error',
       'prettier/prettier': 'error',
       'simple-import-sort/exports': 'error',
@@ -46,4 +46,24 @@ export default tseslint.config(
   },
 
   tseslint.configs.recommended,
+
+  // Arquivos de teste rodam sob Jest (describe/test/expect/jest como globais).
+  // Nota: sem braces "{a,b}" nos globs — o override de brace-expansion@5
+  // (CVE-2026-14257) é incompatível com o minimatch usado pelo ESLint.
+  {
+    files: ['**/*.test.js', '**/*.test.jsx', '**/*.test.ts', '**/*.test.tsx'],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+      },
+    },
+  },
+
+  // Shims de tipos para libs sem tipagem própria (echarts, echarts-for-react).
+  {
+    files: ['**/*.d.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
 );

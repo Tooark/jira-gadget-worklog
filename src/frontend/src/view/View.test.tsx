@@ -71,7 +71,7 @@ describe('View', () => {
     mockedUseForgeInvoke.mockReturnValueOnce([
       { name: 'User One', value: 1.2, color: '#111' },
       { name: 'User Two', value: 2.3, color: '#222' },
-    ] as any);
+    ]);
 
     render(
       <View
@@ -85,8 +85,7 @@ describe('View', () => {
     );
 
     const chartProps = mockReactECharts.mock.calls.at(-1)?.[0] as
-      | { option?: { title?: { text?: string } } }
-      | undefined;
+      { option?: { title?: { text?: string } } } | undefined;
 
     expect(chartProps?.option?.title?.text).toContain('Worklog dos');
     expect(chartProps?.option?.title?.text).toContain('7 dias');
