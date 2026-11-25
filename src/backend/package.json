@@ -2,7 +2,7 @@
   "name": "backend",
   "private": true,
   "dependencies": {
-    "@forge/api": "^8.0.0",
+    "@forge/api": "^8.0.3",
     "@forge/resolver": "1.7.0",
     "jest": "^30.4.2",
     "luxon": "^3.7.2"
