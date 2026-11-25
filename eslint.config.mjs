@@ -48,8 +48,6 @@ export default tseslint.config(
   tseslint.configs.recommended,
 
   // Arquivos de teste rodam sob Jest (describe/test/expect/jest como globais).
-  // Nota: sem braces "{a,b}" nos globs — o override de brace-expansion@5
-  // (CVE-2026-14257) é incompatível com o minimatch usado pelo ESLint.
   {
     files: ['**/*.test.js', '**/*.test.jsx', '**/*.test.ts', '**/*.test.tsx'],
     languageOptions: {
